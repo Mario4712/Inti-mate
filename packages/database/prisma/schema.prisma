@@ -413,3 +413,180 @@ model ModerationLog {
 
   @@index([contentId, contentType])
 }
+
+// ─────────────────────────────────────────────────────────────
+// CONTEÚDO — GALERIA, STORIES
+// ─────────────────────────────────────────────────────────────
+
+enum MediaType {
+  PHOTO
+  VIDEO
+}
+
+enum MediaVisibility {
+  PUBLIC       // visível sem assinatura
+  SUBSCRIBERS  // apenas assinantes
+  PPV          // vinculado a PpvContent
+}
+
+model Media {
+  id            String          @id @default(cuid())
+  creatorId     String
+  type          MediaType
+  visibility    MediaVisibility @default(SUBSCRIBERS)
+  title         String?
+  description   String?
+
+  // URLs resolvidas após processamento
+  originalUrl   String?         // arquivo original no S3
+  processedUrl  String?         // versão otimizada / HLS manifest (.m3u8)
+  thumbnailUrl  String?
+  previewUrl    String?         // teaser público (sem moderação de conteúdo adulto)
+
+  // Metadados técnicos
+  durationSec   Int?            // vídeos
+  fileSizeBytes BigInt?
+  mimeType      String?
+  width         Int?
+  height        Int?
+
+  status        String          @default("PENDING_REVIEW")  // ContentStatus
+  viewCount     Int             @default(0)
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([creatorId, status])
+  @@index([creatorId, visibility])
+}
+
+model Story {
+  id          String   @id @default(cuid())
+  creatorId   String
+  mediaUrl    String
+  mediaType   MediaType
+  expiresAt   DateTime          // 24h após criação
+  viewCount   Int      @default(0)
+  status      String   @default("PENDING_REVIEW")
+  createdAt   DateTime @default(now())
+
+  views       StoryView[]
+
+  @@index([creatorId])
+  @@index([expiresAt])
+}
+
+model StoryView {
+  id        String   @id @default(cuid())
+  storyId   String
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  viewerId  String
+  viewedAt  DateTime @default(now())
+
+  @@unique([storyId, viewerId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// MENSAGENS PRIVADAS
+// ─────────────────────────────────────────────────────────────
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  FLAGGED
+  DELETED
+}
+
+model Conversation {
+  id           String    @id @default(cuid())
+  creatorId    String
+  fanId        String
+  isPaid       Boolean   @default(false)
+  pricePerMsg  Int?      // centavos; null = grátis
+  isBlocked    Boolean   @default(false)
+  blockedBy    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  messages     Message[]
+
+  @@unique([creatorId, fanId])
+  @@index([creatorId])
+  @@index([fanId])
+}
+
+model Message {
+  id             String         @id @default(cuid())
+  conversationId String
+  conversation   Conversation   @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  body           String?        // texto; null se for mídia
+  mediaUrl       String?        // mensagem com mídia
+  mediaType      MediaType?
+  status         MessageStatus  @default(SENT)
+  pricePaid      Int?           // centavos pagos para enviar (se conversa paga)
+  isAutoReply    Boolean        @default(false)  // resposta automática configurada pelo criador
+  createdAt      DateTime       @default(now())
+  deletedAt      DateTime?      // soft delete
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// NOTIFICAÇÕES
+// ─────────────────────────────────────────────────────────────
+
+enum NotificationType {
+  NEW_SUBSCRIBER
+  NEW_MESSAGE
+  NEW_PPV_PURCHASE
+  NEW_TIP
+  PAYMENT_RECEIVED
+  PAYMENT_FAILED
+  WITHDRAWAL_SCHEDULED
+  WITHDRAWAL_COMPLETED
+  CONTENT_APPROVED
+  CONTENT_REJECTED
+  STORY_VIEW
+  SYSTEM
+}
+
+model NotificationPreference {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  emailEnabled    Boolean  @default(true)
+  pushEnabled     Boolean  @default(true)
+  // Tipos desabilitados individualmente (array de NotificationType)
+  disabledTypes   String[] @default([])
+  maxPerDay       Int      @default(5)
+  updatedAt       DateTime @updatedAt
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  link      String?
+  readAt    DateTime?
+  sentEmail Boolean          @default(false)
+  sentPush  Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}

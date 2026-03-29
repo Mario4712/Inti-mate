@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
+import { ScheduleModule } from "@nestjs/schedule";
 import { APP_GUARD } from "@nestjs/core";
 import { AuthModule } from "./auth/auth.module";
 import { UsersModule } from "./users/users.module";
@@ -8,6 +9,11 @@ import { ModerationModule } from "./moderation/moderation.module";
 import { PaymentsModule } from "./payments/payments.module";
 import { SubscriptionsModule } from "./subscriptions/subscriptions.module";
 import { WithdrawalsModule } from "./withdrawals/withdrawals.module";
+import { ContentModule } from "./content/content.module";
+import { MessagesModule } from "./messages/messages.module";
+import { StoriesModule } from "./stories/stories.module";
+import { NotificationsModule } from "./notifications/notifications.module";
+import { SupportModule } from "./support/support.module";
 import { DatabaseModule } from "./common/database/database.module";
 import { RedisModule } from "./common/redis/redis.module";
 import appConfig from "./config/app.config";
@@ -36,6 +42,7 @@ import appConfig from "./config/app.config";
       },
     ]),
 
+    ScheduleModule.forRoot(),
     DatabaseModule,
     RedisModule,
     AuthModule,
@@ -44,6 +51,11 @@ import appConfig from "./config/app.config";
     PaymentsModule,
     SubscriptionsModule,
     WithdrawalsModule,
+    ContentModule,
+    MessagesModule,
+    StoriesModule,
+    NotificationsModule,
+    SupportModule,
   ],
   providers: [
     // Rate limiting aplicado globalmente

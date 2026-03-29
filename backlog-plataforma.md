@@ -94,11 +94,11 @@
 ### BLOCO 3 — ENGAJAMENTO BÁSICO (Semanas 9–12)
 > Com monetização ativa, agora é necessário reter usuários e criar hábito de uso.
 
-- [ ] **14. Upload e galeria de conteúdo**: fotos e vídeos; processamento assíncrono (FFmpeg + HLS); barra de progresso; metadados (tags, descrição, visibilidade); limite de tamanho por plano
-- [ ] **15. Mensagens privadas**: chat entre criador e fã; mensagens pagas (criador define preço/conversa); histórico de mensagens; indicador de leitura; bloqueio de usuário
-- [ ] **16. Stories efêmeros**: conteúdo de 24h exclusivo para assinantes; upload de foto ou vídeo curto (até 60s); visualizações contadas; sem algoritmo forçando exibição
-- [ ] **17. Notificações push**: web push + email para novos conteúdos, mensagens, cobrança; configurável pelo usuário (tipos e frequência); opt-out fácil em um clique; máximo de 5/dia
-- [ ] **18. Chatbot de suporte**: IA da plataforma claramente identificada para dúvidas operacionais (pagamento, saque, moderação); escalonamento para humano em casos complexos
+- [x] **14. Upload e galeria de conteúdo**: fotos e vídeos; processamento assíncrono (FFmpeg + HLS); barra de progresso; metadados (tags, descrição, visibilidade); limite de tamanho por plano
+- [x] **15. Mensagens privadas**: chat entre criador e fã; mensagens pagas (criador define preço/conversa); histórico de mensagens; indicador de leitura; bloqueio de usuário
+- [x] **16. Stories efêmeros**: conteúdo de 24h exclusivo para assinantes; upload de foto ou vídeo curto (até 60s); visualizações contadas; sem algoritmo forçando exibição
+- [x] **17. Notificações push**: web push + email para novos conteúdos, mensagens, cobrança; configurável pelo usuário (tipos e frequência); opt-out fácil em um clique; máximo de 5/dia
+- [x] **18. Chatbot de suporte**: IA da plataforma claramente identificada para dúvidas operacionais (pagamento, saque, moderação); escalonamento para humano em casos complexos
 
 ---
 
