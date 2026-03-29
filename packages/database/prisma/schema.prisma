@@ -78,8 +78,30 @@ enum TransactionType {
   SUBSCRIPTION
   PPV
   TIP
+  SUPERCHAT
+  DIGITAL_ITEM
   WITHDRAWAL
   REFUND
+}
+
+enum LiveStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELLED
+}
+
+enum AuctionStatus {
+  DRAFT
+  OPEN
+  CLOSED
+  PAID
+  CANCELLED
+}
+
+enum ToySessionStatus {
+  ACTIVE
+  ENDED
 }
 
 enum TransactionStatus {
@@ -737,4 +759,132 @@ model Referral {
 
   @@index([referrerId])
   @@index([referralCode])
+}
+
+// ─────────────────────────────────────────────────────────────
+// BLOCO 6 — LIVES E INTERATIVIDADE
+// ─────────────────────────────────────────────────────────────
+
+// Item 30 — Lives
+model LiveSession {
+  id              String      @id @default(cuid())
+  creatorId       String
+  title           String      @db.VarChar(200)
+  description     String?     @db.VarChar(1000)
+  status          LiveStatus  @default(SCHEDULED)
+  scheduledAt     DateTime?
+  startedAt       DateTime?
+  endedAt         DateTime?
+
+  // LiveKit
+  livekitRoomName String?     @unique
+  livekitToken    String?     // token do host (rotacionado a cada live)
+
+  // Acesso
+  requiresSubscription Boolean @default(true)
+  maxViewers          Int?                       // null = ilimitado
+  viewerCount         Int     @default(0)
+  peakViewers         Int     @default(0)
+
+  // Gravação — apenas com consentimento explícito do criador
+  recordingEnabled    Boolean @default(false)
+  recordingConsentAt  DateTime?
+  recordingUrl        String?
+
+  superChats  SuperChat[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([creatorId, status])
+  @@index([scheduledAt])
+}
+
+// Item 31 — Super Chat (pay-to-interact)
+model SuperChat {
+  id          String      @id @default(cuid())
+  liveId      String
+  live        LiveSession @relation(fields: [liveId], references: [id])
+  senderId    String
+  amount      Int                               // centavos
+  netAmount   Int                               // após taxa 20%
+  message     String      @db.VarChar(200)
+  color       String      @default("#9333ea")  // cor baseada no valor
+  pinnedUntil DateTime?                         // destaque temporário no chat
+  createdAt   DateTime    @default(now())
+
+  @@index([liveId, createdAt])
+}
+
+// Item 32 — Leilões
+model Auction {
+  id             String        @id @default(cuid())
+  creatorId      String
+  title          String        @db.VarChar(200)
+  description    String?       @db.VarChar(2000)
+  mediaId        String?       // conteúdo a ser entregue ao vencedor
+  startingBid    Int           // centavos
+  currentBid     Int           @default(0)
+  winnerId       String?
+  status         AuctionStatus @default(DRAFT)
+  endsAt         DateTime
+  deliveredAt    DateTime?
+  deliveryUrl    String?       // URL pré-assinada entregue ao vencedor
+
+  bids           AuctionBid[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([creatorId, status])
+  @@index([endsAt])
+}
+
+model AuctionBid {
+  id        String   @id @default(cuid())
+  auctionId String
+  auction   Auction  @relation(fields: [auctionId], references: [id])
+  bidderId  String
+  amount    Int      // centavos
+  createdAt DateTime @default(now())
+
+  @@index([auctionId, amount])
+  @@index([bidderId])
+}
+
+// Item 33 — Toys IoT
+model ToySession {
+  id          String           @id @default(cuid())
+  creatorId   String
+  liveId      String?          // opcional: vinculada a uma live
+  status      ToySessionStatus @default(ACTIVE)
+
+  // Consentimento explícito por sessão (nunca global)
+  consentAt   DateTime         @default(now())
+  consentText String           // texto exibido ao criador antes de ativar
+
+  // Configuração de controle
+  minIntensity  Int            @default(0)   // 0–100
+  maxIntensity  Int            @default(50)  // cap máximo que fãs podem atingir
+  pricePerMin   Int            // centavos por minuto de controle
+  minPayBRL     Int            @default(500) // R$ 5,00 mínimo por ativação
+
+  controls    ToyControl[]
+  endedAt     DateTime?
+  createdAt   DateTime         @default(now())
+
+  @@index([creatorId, status])
+}
+
+model ToyControl {
+  id          String     @id @default(cuid())
+  sessionId   String
+  session     ToySession @relation(fields: [sessionId], references: [id])
+  userId      String     // fã que pagou
+  durationSec Int        // segundos comprados
+  intensity   Int        // 0–100 (respeitado o maxIntensity)
+  amountPaid  Int        // centavos
+  netAmount   Int        // após taxa 20%
+  startedAt   DateTime   @default(now())
+  endsAt      DateTime
+
+  @@index([sessionId, endsAt])
 }

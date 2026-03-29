@@ -19,6 +19,9 @@ import { TipsModule } from "./tips/tips.module";
 import { DigitalItemsModule } from "./digital-items/digital-items.module";
 import { AnalyticsModule } from "./analytics/analytics.module";
 import { ReferralsModule } from "./referrals/referrals.module";
+import { LivesModule } from "./lives/lives.module";
+import { AuctionsModule } from "./auctions/auctions.module";
+import { ToysModule } from "./toys/toys.module";
 import { DatabaseModule } from "./common/database/database.module";
 import { RedisModule } from "./common/redis/redis.module";
 import appConfig from "./config/app.config";
@@ -66,6 +69,9 @@ import appConfig from "./config/app.config";
     DigitalItemsModule,
     AnalyticsModule,
     ReferralsModule,
+    LivesModule,
+    AuctionsModule,
+    ToysModule,
   ],
   providers: [
     // Rate limiting aplicado globalmente

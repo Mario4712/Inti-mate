@@ -128,10 +128,10 @@
 ### BLOCO 6 — LIVES E INTERATIVIDADE (Semanas 23–28)
 > Alto impacto em engajamento e monetização, mas complexidade técnica alta — vem depois da base sólida.
 
-- [ ] **30. Lives interativas**: streaming WebRTC via LiveKit; chat em tempo real; limite de espectadores por plano; gravação automática com consentimento do criador
-- [ ] **31. Pay-to-interact em lives**: fãs pagam para destacar mensagem no chat (como Super Chat do YouTube); criador define valor mínimo; receita split automático
-- [ ] **32. Leilões de conteúdo exclusivo**: live auction para conteúdo único; lance mínimo definido pelo criador; timer de encerramento; pagamento automático ao vencedor; transferência de arquivo após confirmação
-- [ ] **33. Integração com toys IoT**: Lovense/Kiiroo via Bluetooth API; criador ativa o modo em cada sessão (consentimento por sessão, não global); fãs pagam por tempo de controle; valores mínimos/máximos definidos pelo criador
+- [x] **30. Lives interativas**: streaming WebRTC via LiveKit; chat em tempo real; limite de espectadores por plano; gravação automática com consentimento do criador
+- [x] **31. Pay-to-interact em lives**: fãs pagam para destacar mensagem no chat (como Super Chat do YouTube); criador define valor mínimo; receita split automático
+- [x] **32. Leilões de conteúdo exclusivo**: live auction para conteúdo único; lance mínimo definido pelo criador; timer de encerramento; pagamento automático ao vencedor; transferência de arquivo após confirmação
+- [x] **33. Integração com toys IoT**: Lovense/Kiiroo via Bluetooth API; criador ativa o modo em cada sessão (consentimento por sessão, não global); fãs pagam por tempo de controle; valores mínimos/máximos definidos pelo criador
 
 ---
 
