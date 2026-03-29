@@ -115,13 +115,13 @@
 ### BLOCO 5 — RETENÇÃO E RECEITA AVANÇADA (Semanas 17–22)
 > Com base de usuários estabelecida, aumentar ARPU e reduzir churn.
 
-- [ ] **23. Sistema de gorjetas (tips)**: botão de doação em posts, lives e perfis; leaderboard de apoiadores do mês (exibição com consentimento do fã); sem manipulação de ranking
-- [ ] **24. Venda de itens digitais**: packs de fotos/vídeos, conteúdo personalizado encomendado, mensagem de voz; criador define preço e entrega; sistema de pedidos com prazo
-- [ ] **25. Creator Intelligence Dashboard**: horários de pico de atividade dos assinantes; taxa de retenção por tipo de conteúdo; funil de conversão (visitante → assinante); análise de churn; receita por período
-- [ ] **26. Pricing inteligente**: surge pricing em lives (preço do ingresso sobe com demanda); vagas limitadas de assinatura por criador (cria escassez real); timers de promoção com prazo verdadeiro; desconto automático win-back para inativos há 30+ dias
-- [ ] **27. Sistema de upsell**: exit-intent modal ao tentar sair de perfil de criador; upsell pós-compra de PPV ("esse criador tem mais 3 conteúdos exclusivos"); modal de boas-vindas com oferta de 7 dias grátis — todos com botão X visível, sem loop de reabertura
-- [ ] **28. Streak de recompensa positiva**: badge semanal/mensal por frequência de acesso; desconto progressivo na assinatura (ex: 30 dias seguidos = 10% off); leaderboard de apoiadores com premiação real; zero punição por inatividade
-- [ ] **29. Viral loop de indicação**: link de referência único por usuário; consumidor que indica ganha crédito (ex: R$ 15 em assinatura); "compartilhe para desbloquear 7 dias grátis"; teaser público de conteúdo compartilhável pelo criador
+- [x] **23. Sistema de gorjetas (tips)**: botão de doação em posts, lives e perfis; leaderboard de apoiadores do mês (exibição com consentimento do fã); sem manipulação de ranking
+- [x] **24. Venda de itens digitais**: packs de fotos/vídeos, conteúdo personalizado encomendado, mensagem de voz; criador define preço e entrega; sistema de pedidos com prazo
+- [x] **25. Creator Intelligence Dashboard**: horários de pico de atividade dos assinantes; taxa de retenção por tipo de conteúdo; funil de conversão (visitante → assinante); análise de churn; receita por período
+- [x] **26. Pricing inteligente**: surge pricing em lives (preço do ingresso sobe com demanda); vagas limitadas de assinatura por criador (cria escassez real); timers de promoção com prazo verdadeiro; desconto automático win-back para inativos há 30+ dias
+- [x] **27. Sistema de upsell**: exit-intent modal ao tentar sair de perfil de criador; upsell pós-compra de PPV ("esse criador tem mais 3 conteúdos exclusivos"); modal de boas-vindas com oferta de 7 dias grátis — todos com botão X visível, sem loop de reabertura
+- [x] **28. Streak de recompensa positiva**: badge semanal/mensal por frequência de acesso; desconto progressivo na assinatura (ex: 30 dias seguidos = 10% off); leaderboard de apoiadores com premiação real; zero punição por inatividade
+- [x] **29. Viral loop de indicação**: link de referência único por usuário; consumidor que indica ganha crédito (ex: R$ 15 em assinatura); "compartilhe para desbloquear 7 dias grátis"; teaser público de conteúdo compartilhável pelo criador
 
 ---
 

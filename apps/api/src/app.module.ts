@@ -15,6 +15,10 @@ import { StoriesModule } from "./stories/stories.module";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { SupportModule } from "./support/support.module";
 import { SearchModule } from "./search/search.module";
+import { TipsModule } from "./tips/tips.module";
+import { DigitalItemsModule } from "./digital-items/digital-items.module";
+import { AnalyticsModule } from "./analytics/analytics.module";
+import { ReferralsModule } from "./referrals/referrals.module";
 import { DatabaseModule } from "./common/database/database.module";
 import { RedisModule } from "./common/redis/redis.module";
 import appConfig from "./config/app.config";
@@ -58,6 +62,10 @@ import appConfig from "./config/app.config";
     NotificationsModule,
     SupportModule,
     SearchModule,
+    TipsModule,
+    DigitalItemsModule,
+    AnalyticsModule,
+    ReferralsModule,
   ],
   providers: [
     // Rate limiting aplicado globalmente

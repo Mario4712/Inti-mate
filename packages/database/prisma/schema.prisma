@@ -606,3 +606,135 @@ model PushSubscription {
 
   @@index([userId])
 }
+
+// ─────────────────────────────────────────────────────────────
+// BLOCO 5 — RETENÇÃO E RECEITA AVANÇADA
+// ─────────────────────────────────────────────────────────────
+
+// Item 23 — Gorjetas
+model Tip {
+  id          String   @id @default(cuid())
+  senderId    String                         // fã que enviou
+  creatorId   String                         // criador que recebeu
+  amount      Decimal  @db.Decimal(10, 2)    // valor bruto (R$)
+  netAmount   Decimal  @db.Decimal(10, 2)    // após taxa da plataforma (80%)
+  message     String?  @db.VarChar(280)      // mensagem pública opcional
+  isPublic    Boolean  @default(true)        // exibir no leaderboard?
+  mediaId     String?                        // gorjeta em post específico
+  createdAt   DateTime @default(now())
+
+  @@index([creatorId, createdAt])
+  @@index([senderId])
+}
+
+// Item 24 — Itens digitais
+enum DigitalItemType {
+  PHOTO_PACK
+  VIDEO_PACK
+  CUSTOM_REQUEST   // conteúdo personalizado encomendado
+  VOICE_MESSAGE
+  OTHER
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  IN_PROGRESS
+  DELIVERED
+  CANCELLED
+  DISPUTED
+}
+
+model DigitalItem {
+  id           String          @id @default(cuid())
+  creatorId    String
+  title        String          @db.VarChar(100)
+  description  String?         @db.VarChar(1000)
+  type         DigitalItemType
+  price        Decimal         @db.Decimal(10, 2)
+  deliveryDays Int             @default(3)    // prazo prometido em dias úteis
+  isActive     Boolean         @default(true)
+  sampleUrl    String?                        // preview público (sem conteúdo adulto)
+  orders       DigitalOrder[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([creatorId, isActive])
+}
+
+model DigitalOrder {
+  id            String        @id @default(cuid())
+  buyerId       String
+  itemId        String
+  item          DigitalItem   @relation(fields: [itemId], references: [id])
+  status        OrderStatus   @default(PENDING_PAYMENT)
+  price         Decimal       @db.Decimal(10, 2)
+  netAmount     Decimal       @db.Decimal(10, 2)
+  buyerNote     String?       @db.VarChar(500)  // instruções do comprador
+  deliveryUrl   String?                          // link de entrega (S3 pré-assinado)
+  deliveredAt   DateTime?
+  deadlineAt    DateTime?                        // prazo = createdAt + deliveryDays
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([buyerId])
+  @@index([itemId])
+}
+
+// Item 26 — Slots limitados + promoções
+model SubscriptionSlotConfig {
+  id          String   @id @default(cuid())
+  creatorId   String   @unique
+  maxSlots    Int?                       // null = ilimitado
+  promoPrice  Decimal? @db.Decimal(10,2) // preço promocional temporário
+  promoEndsAt DateTime?                  // null = sem promoção ativa
+  updatedAt   DateTime @updatedAt
+}
+
+// Item 28 — Streaks e badges
+model UserStreak {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  currentStreak Int      @default(0)     // dias consecutivos de acesso
+  longestStreak Int      @default(0)
+  lastActiveAt  DateTime @default(now())
+  totalDays     Int      @default(0)
+  updatedAt     DateTime @updatedAt
+}
+
+model StreakBadge {
+  id          String   @id @default(cuid())
+  userId      String
+  badgeType   String                      // "WEEK_1", "MONTH_1", "MONTH_3", etc.
+  earnedAt    DateTime @default(now())
+  discountPct Int      @default(0)        // % de desconto associado ao badge
+
+  @@unique([userId, badgeType])
+  @@index([userId])
+}
+
+// Item 29 — Programa de referência
+model ReferralCode {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  code        String   @unique            // ex: "MARIO2024"
+  creditBRL   Decimal  @db.Decimal(10,2)  @default(15.00)  // crédito por indicação
+  totalReferrals Int   @default(0)
+  totalEarned Decimal  @db.Decimal(10,2)  @default(0)
+  createdAt   DateTime @default(now())
+  referrals   Referral[]
+}
+
+model Referral {
+  id           String       @id @default(cuid())
+  referralCode String
+  code         ReferralCode @relation(fields: [referralCode], references: [code])
+  referrerId   String                            // quem indicou
+  referredId   String       @unique              // quem foi indicado (1 por pessoa)
+  creditGranted Boolean     @default(false)      // crédito já aplicado?
+  creditAmount  Decimal     @db.Decimal(10,2)    @default(0)
+  createdAt    DateTime     @default(now())
+
+  @@index([referrerId])
+  @@index([referralCode])
+}
