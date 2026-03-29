@@ -993,3 +993,147 @@ model VerifiedTierAccess {
 
   @@index([userId, status])
 }
+
+// ─────────────────────────────────────────────────────────────
+// BLOCO 8 — IA E DIFERENCIAÇÃO
+// ─────────────────────────────────────────────────────────────
+
+// Item 37 — AI Persona
+model AiPersona {
+  id           String   @id @default(cuid())
+  creatorId    String   @unique
+  displayName  String   @db.VarChar(60)    // "IA da Fulana"
+  voiceTone    String   @db.VarChar(500)   // instruções de tom
+  systemPrompt String   @db.VarChar(4000)  // prompt base para o modelo
+  enabled      Boolean  @default(false)
+  // FAQ enlatado: array de {q, a}
+  faqEntries   Json     @default("[]")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model AiPersonaMessage {
+  id         String   @id @default(cuid())
+  personaId  String
+  userId     String   // fã que recebeu a resposta
+  userMsg    String   @db.VarChar(2000)
+  aiReply    String   @db.VarChar(4000)
+  modelUsed  String   // ex: "claude-haiku-4-5"
+  createdAt  DateTime @default(now())
+
+  @@index([personaId, createdAt])
+}
+
+// Item 39 — Collab matches
+enum CollabStatus {
+  PENDING    // sugestão automática
+  INVITED    // um dos criadores enviou convite
+  ACCEPTED   // ambos aceitaram
+  REJECTED
+  CANCELLED
+}
+
+model CollabMatch {
+  id          String       @id @default(cuid())
+  creatorAId  String
+  creatorBId  String
+  score       Float        // score de compatibilidade 0–1
+  status      CollabStatus @default(PENDING)
+  initiatedBy String?      // quem enviou convite (null = sugestão automática)
+  acceptedAt  DateTime?
+  contractId  String?      // ref para CollabContract após aceite
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([creatorAId, creatorBId])
+  @@index([creatorAId, status])
+  @@index([creatorBId, status])
+}
+
+// Item 40 — Contratos IA
+enum ContractStatus {
+  DRAFT
+  PENDING_SIGNATURES
+  SIGNED
+  EXPIRED
+  CANCELLED
+}
+
+model CollabContract {
+  id              String         @id @default(cuid())
+  matchId         String?
+  creatorAId      String
+  creatorBId      String
+  status          ContractStatus @default(DRAFT)
+
+  // Termos gerados pela IA
+  terms           Json           // { revenueSplit, exclusivity, durationDays, ... }
+  fullText        String         @db.Text   // texto completo do contrato
+  summary         String         @db.VarChar(2000) // resumo em linguagem simples
+
+  // Assinaturas via token SMS
+  tokenA          String?        // token OTP enviado ao criadorA
+  tokenAExpiresAt DateTime?
+  signedByAAt     DateTime?
+
+  tokenB          String?
+  tokenBExpiresAt DateTime?
+  signedByBAt     DateTime?
+
+  // Armazenamento imutável no S3
+  s3Key           String?        // após assinatura dupla
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([creatorAId])
+  @@index([creatorBId])
+}
+
+// Item 41 — Torneios
+enum TournamentMetric {
+  NEW_SUBSCRIBERS
+  REVENUE
+  CONTENT_VIEWS
+}
+
+enum TournamentStatus {
+  UPCOMING
+  ACTIVE
+  ENDED
+  PAID
+}
+
+model Tournament {
+  id           String            @id @default(cuid())
+  name         String            @db.VarChar(200)
+  description  String            @db.VarChar(2000)
+  metric       TournamentMetric
+  status       TournamentStatus  @default(UPCOMING)
+  startsAt     DateTime
+  endsAt       DateTime
+  prizePoolBRL Decimal           @db.Decimal(10,2)
+  rulesJson    Json              // regulamento público e auditável
+  // Distribuição: [{ rank: 1, pct: 50 }, { rank: 2, pct: 30 }, ...]
+  prizeDistrib Json
+  entries      TournamentEntry[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([status, endsAt])
+}
+
+model TournamentEntry {
+  id           String     @id @default(cuid())
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  creatorId    String
+  score        Decimal    @db.Decimal(14,2) @default(0)
+  rank         Int?
+  prizeBRL     Decimal    @db.Decimal(10,2) @default(0)
+  paid         Boolean    @default(false)
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([tournamentId, creatorId])
+  @@index([tournamentId, score])
+}

@@ -64,6 +64,10 @@ export default registerAs("app", () => ({
     privateKey: process.env.VAPID_PRIVATE_KEY ?? "",
   },
 
+  anthropic: {
+    apiKey: process.env.ANTHROPIC_API_KEY ?? "",
+  },
+
   livekit: {
     host:      process.env.LIVEKIT_HOST      ?? "ws://localhost:7880",
     apiKey:    process.env.LIVEKIT_API_KEY   ?? "devkey",

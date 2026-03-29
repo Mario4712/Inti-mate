@@ -25,6 +25,10 @@ import { ToysModule } from "./toys/toys.module";
 import { AffiliatesModule } from "./affiliates/affiliates.module";
 import { SchedulerPostModule } from "./scheduler/scheduler.module";
 import { VerifiedTierModule } from "./verified-tier/verified-tier.module";
+import { AiPersonaModule } from "./ai-persona/ai-persona.module";
+import { RecommendationsModule } from "./recommendations/recommendations.module";
+import { CollabModule } from "./collab/collab.module";
+import { TournamentsModule } from "./tournaments/tournaments.module";
 import { DatabaseModule } from "./common/database/database.module";
 import { RedisModule } from "./common/redis/redis.module";
 import appConfig from "./config/app.config";
@@ -78,6 +82,10 @@ import appConfig from "./config/app.config";
     AffiliatesModule,
     SchedulerPostModule,
     VerifiedTierModule,
+    AiPersonaModule,
+    RecommendationsModule,
+    CollabModule,
+    TournamentsModule,
   ],
   providers: [
     // Rate limiting aplicado globalmente

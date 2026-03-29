@@ -147,11 +147,11 @@
 ### BLOCO 8 — IA E DIFERENCIAÇÃO (Semanas 33–40)
 > Features que diferenciam da concorrência — dispensáveis no curto prazo, decisivas no longo prazo.
 
-- [ ] **37. AI Persona configurável**: criador escreve respostas base e tom de voz; IA aprende e responde fãs fora do horário; identificado como "IA de [nome]" no perfil; auto-respostas enlatadas para perguntas frequentes
-- [ ] **38. Recomendações preditivas v2**: modelo ML com embeddings de consumo; sugere criadores e conteúdos com alta probabilidade de conversão; opção de transparência ("por que estou vendo isso?"); sem escalonamento para extremos
-- [ ] **39. Matches entre criadores**: sugestão de collabs baseada em audiências complementares (sobreposição de fãs, categorias similares, faixas de preço compatíveis); aceite mútuo obrigatório
-- [ ] **40. Contratos IA com assinatura digital**: IA gera contrato de collab (divisão de receita, exclusividade, prazo) com resumo em linguagem simples; assinatura via token SMS; armazenamento imutável no S3; cópia para ambas as partes
-- [ ] **41. Torneios com prize pool real**: top criadores por novos assinantes ou receita ganham % do pool mensal; regulamento público e auditável; ranking em tempo real no Redis
+- [x] **37. AI Persona configurável**: criador escreve respostas base e tom de voz; IA aprende e responde fãs fora do horário; identificado como "IA de [nome]" no perfil; auto-respostas enlatadas para perguntas frequentes
+- [x] **38. Recomendações preditivas v2**: modelo ML com embeddings de consumo; sugere criadores e conteúdos com alta probabilidade de conversão; opção de transparência ("por que estou vendo isso?"); sem escalonamento para extremos
+- [x] **39. Matches entre criadores**: sugestão de collabs baseada em audiências complementares (sobreposição de fãs, categorias similares, faixas de preço compatíveis); aceite mútuo obrigatório
+- [x] **40. Contratos IA com assinatura digital**: IA gera contrato de collab (divisão de receita, exclusividade, prazo) com resumo em linguagem simples; assinatura via token SMS; armazenamento imutável no S3; cópia para ambas as partes
+- [x] **41. Torneios com prize pool real**: top criadores por novos assinantes ou receita ganham % do pool mensal; regulamento público e auditável; ranking em tempo real no Redis
 
 ---
 
