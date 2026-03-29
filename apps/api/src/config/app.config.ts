@@ -53,6 +53,17 @@ export default registerAs("app", () => ({
     appName: process.env.TOTP_APP_NAME ?? "Inti.mate",
   },
 
+  elasticsearch: {
+    node: process.env.ELASTICSEARCH_NODE ?? "http://localhost:9200",
+    username: process.env.ELASTICSEARCH_USERNAME ?? "elastic",
+    password: process.env.ELASTICSEARCH_PASSWORD ?? "",
+  },
+
+  vapid: {
+    publicKey:  process.env.VAPID_PUBLIC_KEY  ?? "",
+    privateKey: process.env.VAPID_PRIVATE_KEY ?? "",
+  },
+
   pagarme: { apiKey: process.env.PAGARME_API_KEY },
   stripe: {
     secretKey: process.env.STRIPE_SECRET_KEY,

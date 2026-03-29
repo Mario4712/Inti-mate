@@ -14,6 +14,7 @@ import { MessagesModule } from "./messages/messages.module";
 import { StoriesModule } from "./stories/stories.module";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { SupportModule } from "./support/support.module";
+import { SearchModule } from "./search/search.module";
 import { DatabaseModule } from "./common/database/database.module";
 import { RedisModule } from "./common/redis/redis.module";
 import appConfig from "./config/app.config";
@@ -56,6 +57,7 @@ import appConfig from "./config/app.config";
     StoriesModule,
     NotificationsModule,
     SupportModule,
+    SearchModule,
   ],
   providers: [
     // Rate limiting aplicado globalmente

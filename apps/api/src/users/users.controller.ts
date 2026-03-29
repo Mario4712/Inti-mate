@@ -28,9 +28,21 @@ export class UsersController {
   // ─── Perfil público ──────────────────────────────────────
 
   @Get("profile/:artisticName")
-  @ApiOperation({ summary: "Perfil público de um criador" })
+  @ApiOperation({ summary: "Perfil público de um criador (por nome artístico)" })
   getPublicProfile(@Param("artisticName") artisticName: string) {
     return this.usersService.getPublicProfile(artisticName);
+  }
+
+  @Get("creator/:username")
+  @ApiOperation({ summary: "Perfil público de um criador (por username — usado pelo SEO)" })
+  getCreatorByUsername(@Param("username") username: string) {
+    return this.usersService.getCreatorByUsername(username);
+  }
+
+  @Get("creators/sitemap")
+  @ApiOperation({ summary: "Lista criadores ativos para geração do sitemap.xml" })
+  getCreatorsForSitemap() {
+    return this.usersService.getCreatorsForSitemap();
   }
 
   // ─── Perfil privado ──────────────────────────────────────

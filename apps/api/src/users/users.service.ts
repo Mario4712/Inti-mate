@@ -192,6 +192,78 @@ export class UsersService {
     };
   }
 
+  // ─── SEO / Sitemap ───────────────────────────────────────
+
+  async getCreatorByUsername(username: string) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        username,
+        role:      "CREATOR",
+        status:    "ACTIVE",
+        deletedAt: null,
+      },
+      select: {
+        id:       true,
+        username: true,
+        updatedAt: true,
+        profile: {
+          select: {
+            artisticName: true, bio: true,
+            avatarUrl: true, coverUrl: true,
+            tags: true, category: true, country: true,
+          },
+        },
+        creatorPlans: {
+          where: { isActive: true },
+          select: {
+            id: true, name: true, description: true, monthlyPrice: true,
+          },
+          orderBy: { monthlyPrice: "asc" },
+        },
+        _count: { select: { mySubscriptions: true } },
+        media: {
+          where: { status: "APPROVED" },
+          orderBy: { createdAt: "desc" },
+          take: 9,
+          select: { id: true, thumbnailUrl: true, type: true, title: true },
+        },
+      },
+    });
+
+    if (!user) throw new NotFoundException("Criador não encontrado");
+
+    return {
+      id:              user.id,
+      username:        user.username,
+      artisticName:    user.profile?.artisticName ?? user.username,
+      bio:             user.profile?.bio           ?? "",
+      avatarUrl:       user.profile?.avatarUrl     ?? null,
+      coverUrl:        user.profile?.coverUrl      ?? null,
+      tags:            (user.profile?.tags as string[]) ?? [],
+      category:        (user.profile?.category as string) ?? "",
+      country:         (user.profile?.country as string)  ?? "BR",
+      subscriberCount: user._count.mySubscriptions,
+      plans:           user.creatorPlans.map((p) => ({
+        ...p,
+        monthlyPrice: Number(p.monthlyPrice),
+      })),
+      recentMedia: user.media,
+    };
+  }
+
+  async getCreatorsForSitemap(): Promise<Array<{ username: string; updatedAt: string }>> {
+    const users = await this.prisma.user.findMany({
+      where: { role: "CREATOR", status: "ACTIVE", deletedAt: null },
+      select: { username: true, updatedAt: true },
+      orderBy: { updatedAt: "desc" },
+    });
+
+    return users.map((u) => ({
+      username:  u.username,
+      updatedAt: u.updatedAt.toISOString(),
+    }));
+  }
+
   private selectIfPublic() {
     // Prisma não suporta conditional select diretamente;
     // filtramos na camada de serviço

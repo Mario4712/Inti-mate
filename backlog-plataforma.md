@@ -105,10 +105,10 @@
 ### BLOCO 4 — DESCOBERTA E CRESCIMENTO (Semanas 13–16)
 > Sem descoberta, criadores não crescem e consumidores abandonam por falta de variedade.
 
-- [ ] **19. Busca com tags e categorias**: indexação no Elasticsearch; filtros por categoria, preço, tipo de conteúdo, localização; tags moderadas (lista aprovada + sugestão de novas com revisão)
-- [ ] **20. Página de descoberta**: criadores em destaque (curadoria manual + algoritmo); novos criadores; categorias populares; baseado em preferências do usuário; sem perfis inflados artificialmente
-- [ ] **21. Algoritmo de recomendação v1**: baseado em histórico de assinaturas e conteúdos comprados; collaborative filtering básico (PostgreSQL); opção de desligar personalização; sem escalonamento para extremos
-- [ ] **22. SEO programático**: página pública por criador com schema markup (Person + CreativeWork); meta tags dinâmicas; sitemap.xml automático; robots.txt; Core Web Vitals otimizados (LCP < 2.5s)
+- [x] **19. Busca com tags e categorias**: indexação no Elasticsearch; filtros por categoria, preço, tipo de conteúdo, localização; tags moderadas (lista aprovada + sugestão de novas com revisão)
+- [x] **20. Página de descoberta**: criadores em destaque (curadoria manual + algoritmo); novos criadores; categorias populares; baseado em preferências do usuário; sem perfis inflados artificialmente
+- [x] **21. Algoritmo de recomendação v1**: baseado em histórico de assinaturas e conteúdos comprados; collaborative filtering básico (PostgreSQL); opção de desligar personalização; sem escalonamento para extremos
+- [x] **22. SEO programático**: página pública por criador com schema markup (Person + CreativeWork); meta tags dinâmicas; sitemap.xml automático; robots.txt; Core Web Vitals otimizados (LCP < 2.5s)
 
 ---
 

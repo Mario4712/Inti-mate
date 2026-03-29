@@ -106,6 +106,7 @@ enum WithdrawalStatus {
 model User {
   id               String     @id @default(cuid())
   email            String     @unique
+  username         String     @unique  // handle público (ex: @joaosilva)
   passwordHash     String
   role             Role       @default(CONSUMER)
   status           UserStatus @default(PENDING_EMAIL)
@@ -128,8 +129,13 @@ model User {
   emailTokens      EmailVerificationToken[]
   consentRecords   ConsentRecord[]
   deletionRequest  DataDeletionRequest?
+  creatorPlans     CreatorPlan[]
+  subscriptions    Subscription[]    @relation("CreatorSubscriptions")
+  mySubscriptions  Subscription[]    @relation("SubscriberSubscriptions")
+  media            Media[]
 
   @@index([email])
+  @@index([username])
   @@index([cpfHash])
 }
 
@@ -148,7 +154,12 @@ model UserProfile {
   // Dados de localização — apenas cidade/estado, nunca coords
   city         String?
   state        String?
+  country      String?  @default("BR")
   showLocation Boolean  @default(false)  // opt-in para exibição
+
+  // Descoberta / SEO
+  tags         Json?    @default("[]")   // string[]
+  category     String?                  // ex: "fitness", "arte"
 
   isPublic     Boolean  @default(true)
   isCreator    Boolean  @default(false)
@@ -157,6 +168,7 @@ model UserProfile {
   updatedAt    DateTime @updatedAt
 
   @@index([artisticName])
+  @@index([category])
 }
 
 model Session {
@@ -264,18 +276,19 @@ model DataDeletionRequest {
 // ─────────────────────────────────────────────────────────────
 
 model CreatorPlan {
-  id            String               @id @default(cuid())
-  creatorId     String
-  name          String               // "Básico", "VIP", etc.
-  description   String?
-  priceMonthly  Int                  // centavos (R$ 9,90 = 990)
-  priceQuarterly Int?
-  priceYearly   Int?
-  maxSlots      Int?                 // null = ilimitado
-  isActive      Boolean              @default(true)
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
-  subscriptions Subscription[]
+  id             String               @id @default(cuid())
+  creatorId      String
+  creator        User                 @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  name           String               // "Básico", "VIP", etc.
+  description    String?
+  monthlyPrice   Decimal              @db.Decimal(10, 2)
+  priceQuarterly Decimal?             @db.Decimal(10, 2)
+  priceYearly    Decimal?             @db.Decimal(10, 2)
+  maxSlots       Int?                 // null = ilimitado
+  isActive       Boolean              @default(true)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  subscriptions  Subscription[]
 
   @@index([creatorId])
 }
@@ -283,7 +296,9 @@ model CreatorPlan {
 model Subscription {
   id              String               @id @default(cuid())
   subscriberId    String               // userId do fã
+  subscriber      User                 @relation("SubscriberSubscriptions", fields: [subscriberId], references: [id])
   creatorId       String               // userId do criador
+  creator         User                 @relation("CreatorSubscriptions",    fields: [creatorId],    references: [id])
   planId          String
   plan            CreatorPlan          @relation(fields: [planId], references: [id])
   status          SubscriptionStatus   @default(ACTIVE)
@@ -432,6 +447,7 @@ enum MediaVisibility {
 model Media {
   id            String          @id @default(cuid())
   creatorId     String
+  creator       User            @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   type          MediaType
   visibility    MediaVisibility @default(SUBSCRIBERS)
   title         String?
