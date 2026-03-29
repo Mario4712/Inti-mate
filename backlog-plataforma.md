@@ -138,9 +138,9 @@
 ### BLOCO 7 — AFILIADOS E DISTRIBUIÇÃO (Semanas 29–32)
 > Cresce a base de criadores e consumidores via canais externos.
 
-- [ ] **34. Programa de afiliados 2 níveis**: 20% de comissão no nível 1 (indicação direta de criador pagante); 5% no nível 2 (indicação do indicado); cap mensal por afiliado; dashboard de comissões; pagamento junto ao ciclo de saque
-- [ ] **35. Social Scheduler**: criador agenda posts de teaser para Instagram, X/Twitter e TikTok via APIs oficiais; sugestão de horário baseada em quando os seguidores estão ativos; relatório de cliques e conversões por post
-- [ ] **36. Tier "Acesso Verificado"**: seção premium para usuários com verificação de identidade completa; conteúdo mais explícito dentro da lei; moderação reforçada (not reduzida); acesso via upgrade de plano
+- [x] **34. Programa de afiliados 2 níveis**: 20% de comissão no nível 1 (indicação direta de criador pagante); 5% no nível 2 (indicação do indicado); cap mensal por afiliado; dashboard de comissões; pagamento junto ao ciclo de saque
+- [x] **35. Social Scheduler**: criador agenda posts de teaser para Instagram, X/Twitter e TikTok via APIs oficiais; sugestão de horário baseada em quando os seguidores estão ativos; relatório de cliques e conversões por post
+- [x] **36. Tier "Acesso Verificado"**: seção premium para usuários com verificação de identidade completa; conteúdo mais explícito dentro da lei; moderação reforçada (not reduzida); acesso via upgrade de plano
 
 ---
 

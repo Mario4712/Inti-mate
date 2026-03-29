@@ -888,3 +888,108 @@ model ToyControl {
 
   @@index([sessionId, endsAt])
 }
+
+// ─────────────────────────────────────────────────────────────
+// BLOCO 7 — AFILIADOS E DISTRIBUIÇÃO
+// ─────────────────────────────────────────────────────────────
+
+// Item 34 — Programa de afiliados 2 níveis
+enum AffiliateStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+model Affiliate {
+  id             String          @id @default(cuid())
+  userId         String          @unique
+  status         AffiliateStatus @default(ACTIVE)
+  referredByCode String?         // código do afiliado nível 1 que o recrutou (para nível 2)
+
+  // Comissões
+  l1Rate         Decimal         @db.Decimal(5,4) @default(0.2000)  // 20% nível 1
+  l2Rate         Decimal         @db.Decimal(5,4) @default(0.0500)  // 5%  nível 2
+  capMonthlyBRL  Decimal         @db.Decimal(10,2) @default(5000)   // cap R$5k/mês
+
+  // Saldo acumulado
+  pendingBRL     Decimal         @db.Decimal(10,2) @default(0)
+  paidBRL        Decimal         @db.Decimal(10,2) @default(0)
+  totalEarnedBRL Decimal         @db.Decimal(10,2) @default(0)
+
+  commissions    AffiliateCommission[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([userId])
+}
+
+model AffiliateCommission {
+  id             String   @id @default(cuid())
+  affiliateId    String
+  affiliate      Affiliate @relation(fields: [affiliateId], references: [id])
+  sourceUserId   String   // usuário cuja transação gerou a comissão
+  transactionId  String?  // Transaction que originou
+  level          Int      // 1 ou 2
+  grossBRL       Decimal  @db.Decimal(10,2)  // valor da transação original
+  commissionBRL  Decimal  @db.Decimal(10,2)  // valor da comissão
+  paid           Boolean  @default(false)
+  paidAt         DateTime?
+  createdAt      DateTime @default(now())
+
+  @@index([affiliateId, paid])
+  @@index([sourceUserId])
+}
+
+// Item 35 — Social Scheduler
+enum SocialPlatform {
+  INSTAGRAM
+  TWITTER_X
+  TIKTOK
+}
+
+enum ScheduledPostStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  FAILED
+  CANCELLED
+}
+
+model ScheduledPost {
+  id          String              @id @default(cuid())
+  creatorId   String
+  platform    SocialPlatform
+  caption     String              @db.VarChar(2200)
+  mediaUrl    String?             // teaser (sem conteúdo adulto explícito)
+  scheduledAt DateTime
+  publishedAt DateTime?
+  status      ScheduledPostStatus @default(DRAFT)
+  externalId  String?             // ID do post na rede social
+  errorMsg    String?
+  clicks      Int                 @default(0)
+  conversions Int                 @default(0)   // novos assinantes via link rastreado
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([creatorId, scheduledAt])
+  @@index([status, scheduledAt])
+}
+
+// Item 36 — Tier Acesso Verificado
+enum VerifiedTierStatus {
+  INACTIVE
+  ACTIVE
+  SUSPENDED
+}
+
+model VerifiedTierAccess {
+  id           String             @id @default(cuid())
+  userId       String             @unique
+  status       VerifiedTierStatus @default(INACTIVE)
+  grantedAt    DateTime?
+  revokedAt    DateTime?
+  // Revogar automaticamente se KYC for cancelado
+  kycVerifId   String?
+
+  @@index([userId, status])
+}

@@ -22,6 +22,9 @@ import { ReferralsModule } from "./referrals/referrals.module";
 import { LivesModule } from "./lives/lives.module";
 import { AuctionsModule } from "./auctions/auctions.module";
 import { ToysModule } from "./toys/toys.module";
+import { AffiliatesModule } from "./affiliates/affiliates.module";
+import { SchedulerPostModule } from "./scheduler/scheduler.module";
+import { VerifiedTierModule } from "./verified-tier/verified-tier.module";
 import { DatabaseModule } from "./common/database/database.module";
 import { RedisModule } from "./common/redis/redis.module";
 import appConfig from "./config/app.config";
@@ -72,6 +75,9 @@ import appConfig from "./config/app.config";
     LivesModule,
     AuctionsModule,
     ToysModule,
+    AffiliatesModule,
+    SchedulerPostModule,
+    VerifiedTierModule,
   ],
   providers: [
     // Rate limiting aplicado globalmente
