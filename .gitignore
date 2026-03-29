@@ -1,0 +1,39 @@
+# Dependências
+node_modules/
+.pnpm-store/
+
+# Build
+dist/
+.next/
+out/
+build/
+
+# Ambiente
+.env
+.env.local
+.env.*.local
+
+# Prisma
+prisma/migrations/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Turbo
+.turbo/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# Cobertura de testes
+coverage/
+
+# KYC – nunca commitar documentos
+apps/api/uploads/

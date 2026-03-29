@@ -1,0 +1,238 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────
+
+enum Role {
+  CONSUMER
+  CREATOR
+  MODERATOR
+  ADMIN
+}
+
+enum UserStatus {
+  PENDING_EMAIL       // aguardando confirmação de e-mail
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REQUIRES_REVIEW
+}
+
+enum VerificationType {
+  DECLARATION   // consumidor: checkbox + CPF formato
+  DOCUMENT      // criador: doc + selfie completa
+}
+
+enum ContentStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  FLAGGED
+}
+
+enum ModerationAction {
+  APPROVED
+  REJECTED
+  ESCALATED
+  CSAM_REPORTED
+}
+
+enum ConsentType {
+  TERMS_OF_SERVICE
+  PRIVACY_POLICY
+  AGE_VERIFICATION
+  CONTENT_CREATION
+  DATA_PROCESSING
+}
+
+// ─────────────────────────────────────────────────────────────
+// USUÁRIOS E AUTENTICAÇÃO
+// ─────────────────────────────────────────────────────────────
+
+model User {
+  id               String     @id @default(cuid())
+  email            String     @unique
+  passwordHash     String
+  role             Role       @default(CONSUMER)
+  status           UserStatus @default(PENDING_EMAIL)
+  emailVerified    Boolean    @default(false)
+  twoFactorEnabled Boolean    @default(false)
+  twoFactorSecret  String?    // criptografado em repouso
+
+  // CPF armazenado criptografado — nunca em plaintext
+  cpfHash          String?    @unique  // hash para deduplicação
+  cpfEncrypted     String?             // encrypted para consulta interna
+
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  deletedAt        DateTime?  // soft delete (direito LGPD)
+
+  // Relações
+  profile          UserProfile?
+  ageVerification  AgeVerification?
+  sessions         Session[]
+  emailTokens      EmailVerificationToken[]
+  consentRecords   ConsentRecord[]
+  deletionRequest  DataDeletionRequest?
+
+  @@index([email])
+  @@index([cpfHash])
+}
+
+model UserProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Dados públicos (pseudônimo)
+  artisticName String?  @unique  // nome artístico público
+  displayName  String?           // nome de exibição (pode ser igual ao artístico)
+  bio          String?
+  avatarUrl    String?
+  coverUrl     String?
+
+  // Dados de localização — apenas cidade/estado, nunca coords
+  city         String?
+  state        String?
+  showLocation Boolean  @default(false)  // opt-in para exibição
+
+  isPublic     Boolean  @default(true)
+  isCreator    Boolean  @default(false)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([artisticName])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  refreshToken String   @unique
+  expiresAt    DateTime
+  ipAddress    String?
+  userAgent    String?
+  revokedAt    DateTime?
+
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([refreshToken])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  token     String   @unique
+  type      String   // "email_verify" | "password_reset"
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// VERIFICAÇÃO DE IDADE / KYC
+// ─────────────────────────────────────────────────────────────
+
+model AgeVerification {
+  id               String             @id @default(cuid())
+  userId           String             @unique
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type             VerificationType
+  status           VerificationStatus @default(PENDING)
+
+  // Consumidor: apenas declaração
+  declarationAt    DateTime?
+
+  // Criador: documento + selfie (URLs do bucket KYC — acesso restrito)
+  documentType     String?   // RG | CNH | PASSAPORTE
+  documentUrl      String?   // URL S3 criptografada
+  selfieUrl        String?   // URL S3 criptografada
+  kycProvider      String?   // "unico" | "serpro" | "manual"
+  kycExternalId    String?   // ID retornado pelo provedor
+
+  verifiedAt       DateTime?
+  rejectedAt       DateTime?
+  rejectedReason   String?
+  reviewedBy       String?   // userId do moderador
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────
+// LGPD — CONSENTIMENTO E EXCLUSÃO DE DADOS
+// ─────────────────────────────────────────────────────────────
+
+model ConsentRecord {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type        ConsentType
+  version     String      // versão do documento aceito (ex: "tos-v1.2")
+  accepted    Boolean
+  ipAddress   String?
+  userAgent   String?
+
+  createdAt   DateTime    @default(now())
+
+  @@index([userId, type])
+}
+
+model DataDeletionRequest {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+
+  requestedAt DateTime @default(now())
+  scheduledAt DateTime // execução agendada (ex: 30 dias após solicitação)
+  executedAt  DateTime?
+  status      String   @default("PENDING")  // PENDING | PROCESSING | COMPLETED
+  notes       String?
+}
+
+// ─────────────────────────────────────────────────────────────
+// MODERAÇÃO DE CONTEÚDO
+// ─────────────────────────────────────────────────────────────
+
+model ModerationLog {
+  id            String           @id @default(cuid())
+  contentId     String           // ID do conteúdo moderado
+  contentType   String           // "photo" | "video" | "message" | "profile"
+
+  action        ModerationAction
+  moderatorId   String?          // null = automático (IA/CSAM scan)
+  reason        String?
+
+  csamHash      String?          // hash do arquivo para registro
+  reportedToAuthority Boolean    @default(false)
+  reportReference     String?    // protocolo de reporte ao MP/NCMEC
+
+  createdAt     DateTime         @default(now())
+
+  @@index([contentId, contentType])
+}
