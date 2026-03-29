@@ -59,6 +59,46 @@ enum ConsentType {
   DATA_PROCESSING
 }
 
+// ─── MONETIZAÇÃO ─────────────────────────────────────────────
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE      // cobrança falhou, grace period de 3 dias
+  CANCELLED
+  EXPIRED
+}
+
+enum SubscriptionInterval {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum TransactionType {
+  SUBSCRIPTION
+  PPV
+  TIP
+  WITHDRAWAL
+  REFUND
+}
+
+enum TransactionStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  REFUNDED
+  CHARGEBACK
+}
+
+enum WithdrawalStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
 // ─────────────────────────────────────────────────────────────
 // USUÁRIOS E AUTENTICAÇÃO
 // ─────────────────────────────────────────────────────────────
@@ -213,6 +253,143 @@ model DataDeletionRequest {
   executedAt  DateTime?
   status      String   @default("PENDING")  // PENDING | PROCESSING | COMPLETED
   notes       String?
+}
+
+// ─────────────────────────────────────────────────────────────
+// MODERAÇÃO DE CONTEÚDO
+// ─────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────
+// MONETIZAÇÃO — PLANOS, ASSINATURAS, PPV, SAQUES
+// ─────────────────────────────────────────────────────────────
+
+model CreatorPlan {
+  id            String               @id @default(cuid())
+  creatorId     String
+  name          String               // "Básico", "VIP", etc.
+  description   String?
+  priceMonthly  Int                  // centavos (R$ 9,90 = 990)
+  priceQuarterly Int?
+  priceYearly   Int?
+  maxSlots      Int?                 // null = ilimitado
+  isActive      Boolean              @default(true)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  subscriptions Subscription[]
+
+  @@index([creatorId])
+}
+
+model Subscription {
+  id              String               @id @default(cuid())
+  subscriberId    String               // userId do fã
+  creatorId       String               // userId do criador
+  planId          String
+  plan            CreatorPlan          @relation(fields: [planId], references: [id])
+  status          SubscriptionStatus   @default(ACTIVE)
+  interval        SubscriptionInterval @default(MONTHLY)
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelledAt     DateTime?
+  cancellationReason String?
+  gatewaySubscriptionId String?        // ID no Pagar.me ou Stripe
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@unique([subscriberId, creatorId, planId])
+  @@index([subscriberId])
+  @@index([creatorId])
+}
+
+model PpvContent {
+  id            String    @id @default(cuid())
+  creatorId     String
+  title         String
+  description   String?
+  price         Int       // centavos
+  contentUrl    String?   // preenchido após moderação aprovada
+  previewUrl    String?   // teaser gratuito
+  status        String    @default("PENDING_REVIEW") // ContentStatus
+  purchaseCount Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  purchases     PpvPurchase[]
+
+  @@index([creatorId])
+}
+
+model PpvPurchase {
+  id          String     @id @default(cuid())
+  buyerId     String
+  contentId   String
+  content     PpvContent @relation(fields: [contentId], references: [id])
+  pricePaid   Int        // centavos
+  transaction Transaction?
+  createdAt   DateTime   @default(now())
+
+  @@unique([buyerId, contentId])
+  @@index([buyerId])
+}
+
+model Transaction {
+  id               String            @id @default(cuid())
+  userId           String            // quem pagou
+  creatorId        String?           // quem recebeu (null = plataforma)
+  type             TransactionType
+  status           TransactionStatus @default(PENDING)
+  grossAmount      Int               // valor bruto em centavos
+  platformFee      Int               // taxa da plataforma em centavos
+  netAmount        Int               // valor líquido ao criador
+  currency         String            @default("BRL")
+  description      String?
+
+  // Referências polimórficas
+  subscriptionId   String?
+  ppvPurchaseId    String?           @unique
+  ppvPurchase      PpvPurchase?      @relation(fields: [ppvPurchaseId], references: [id])
+  withdrawalId     String?
+
+  // Gateway
+  gatewayProvider  String?           // "pagarme" | "stripe"
+  gatewayTxId      String?           @unique
+  gatewayPayload   Json?             // resposta raw do gateway
+
+  failureReason    String?
+  refundedAt       DateTime?
+
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([creatorId])
+  @@index([gatewayTxId])
+}
+
+model CreatorBalance {
+  id              String   @id @default(cuid())
+  creatorId       String   @unique
+  availableAmount Int      @default(0)  // centavos disponíveis para saque
+  pendingAmount   Int      @default(0)  // centavos em processamento
+  totalEarned     Int      @default(0)  // total histórico
+  updatedAt       DateTime @updatedAt
+}
+
+model Withdrawal {
+  id              String           @id @default(cuid())
+  creatorId       String
+  amount          Int              // centavos
+  status          WithdrawalStatus @default(PENDING)
+  pixKey          String           // chave PIX (mascarada nos logs)
+  pixKeyType      String           // CPF | EMAIL | PHONE | EVP
+  scheduledDate   DateTime         // D+14 da solicitação
+  processedAt     DateTime?
+  failureReason   String?
+  gatewayTxId     String?
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([creatorId])
 }
 
 // ─────────────────────────────────────────────────────────────

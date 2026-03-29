@@ -5,6 +5,9 @@ import { APP_GUARD } from "@nestjs/core";
 import { AuthModule } from "./auth/auth.module";
 import { UsersModule } from "./users/users.module";
 import { ModerationModule } from "./moderation/moderation.module";
+import { PaymentsModule } from "./payments/payments.module";
+import { SubscriptionsModule } from "./subscriptions/subscriptions.module";
+import { WithdrawalsModule } from "./withdrawals/withdrawals.module";
 import { DatabaseModule } from "./common/database/database.module";
 import { RedisModule } from "./common/redis/redis.module";
 import appConfig from "./config/app.config";
@@ -38,6 +41,9 @@ import appConfig from "./config/app.config";
     AuthModule,
     UsersModule,
     ModerationModule,
+    PaymentsModule,
+    SubscriptionsModule,
+    WithdrawalsModule,
   ],
   providers: [
     // Rate limiting aplicado globalmente

@@ -53,5 +53,11 @@ export default registerAs("app", () => ({
     appName: process.env.TOTP_APP_NAME ?? "Inti.mate",
   },
 
+  pagarme: { apiKey: process.env.PAGARME_API_KEY },
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY,
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+  },
+
   frontendUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
 }));

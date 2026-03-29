@@ -66,11 +66,40 @@ export const authApi = {
 };
 
 export const usersApi = {
-  getProfile:    (artisticName: string) => api.get(`/users/profile/${artisticName}`),
-  getMyProfile:  ()                     => api.get("/users/me"),
-  updateProfile: (data: any)            => api.patch("/users/me", data),
-  getKycStatus:  ()                     => api.get("/users/me/kyc/status"),
-  submitKyc:     (data: any)            => api.post("/users/me/kyc/submit", data),
-  requestDeletion: ()                   => api.post("/users/me/data-deletion"),
-  exportData:    ()                     => api.get("/users/me/data-export"),
+  getProfile:      (artisticName: string) => api.get(`/users/profile/${artisticName}`),
+  getMyProfile:    ()                     => api.get("/users/me"),
+  updateProfile:   (data: any)            => api.patch("/users/me", data),
+  getKycStatus:    ()                     => api.get("/users/me/kyc/status"),
+  submitKyc:       (data: any)            => api.post("/users/me/kyc/submit", data),
+  requestDeletion: ()                     => api.post("/users/me/data-deletion"),
+  exportData:      ()                     => api.get("/users/me/data-export"),
+};
+
+export const subscriptionsApi = {
+  createPlan:       (data: any)         => api.post("/subscriptions/plans", data),
+  updatePlan:       (id: string, data: any) => api.patch(`/subscriptions/plans/${id}`, data),
+  deactivatePlan:   (id: string)        => api.delete(`/subscriptions/plans/${id}`),
+  getCreatorPlans:  (creatorId: string) => api.get(`/subscriptions/plans/creator/${creatorId}`),
+  subscribe:        (data: any)         => api.post("/subscriptions/subscribe", data),
+  cancel:           (id: string, data?: any) => api.delete(`/subscriptions/${id}`, { data }),
+  getMine:          ()                  => api.get("/subscriptions/mine"),
+  getSubscribers:   (page = 1)          => api.get(`/subscriptions/subscribers?page=${page}`),
+};
+
+export const ppvApi = {
+  create:       (data: any)        => api.post("/ppv", data),
+  listByCreator:(creatorId: string) => api.get(`/ppv/creator/${creatorId}`),
+  getOne:       (id: string)        => api.get(`/ppv/${id}`),
+  purchase:     (id: string, data: any) => api.post(`/ppv/${id}/purchase`, data),
+  myPurchases:  ()                  => api.get("/ppv/mine/purchases"),
+};
+
+export const withdrawalsApi = {
+  getBalance: ()         => api.get("/withdrawals/balance"),
+  request:    (data: any) => api.post("/withdrawals", data),
+  getHistory: (page = 1) => api.get(`/withdrawals/history?page=${page}`),
+};
+
+export const paymentsApi = {
+  getTransactions: (page = 1) => api.get(`/auth/me`), // será substituído por endpoint real
 };

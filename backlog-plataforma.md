@@ -82,12 +82,12 @@
 ### BLOCO 2 — MONETIZAÇÃO CORE (Semanas 5–8)
 > Sem receita, a plataforma não sustenta operação. Este bloco ativa o fluxo de dinheiro.
 
-- [ ] **8. Integração de pagamentos**: Pagar.me para PIX, boleto, cartão de crédito; Stripe para pagamentos internacionais; split automático criador/plataforma; antifraude básico
-- [ ] **9. Taxas transparentes + extrato**: fee da plataforma visível em toda tela de compra (ex: "Plataforma retém 20%"); extrato detalhado para criadores com filtros por período e tipo de receita
-- [ ] **10. Assinaturas por criador**: criador define preço mensal/trimestral/anual; renovação automática; cancelamento self-service; grace period de 3 dias após falha de cobrança
-- [ ] **11. Pay-Per-View (PPV)**: upload de conteúdo com paywall; preço visível antes da compra; acesso permanente após compra; preview desbloqueável pelo criador
-- [ ] **12. Saque para criadores**: PIX com prazo D+14 do ciclo; dashboard de saldo disponível/bloqueado; histórico de saques; validação de conta bancária no KYC
-- [ ] **13. Onboarding em 2 camadas**: fluxo de cadastro consumidor em < 2 min (checkbox + CPF formato + email); fluxo criador completo com KYC e tutoriais de como monetizar; emails transacionais automáticos
+- [x] **8. Integração de pagamentos**: Pagar.me para PIX, boleto, cartão de crédito; Stripe para pagamentos internacionais; split automático criador/plataforma; antifraude básico
+- [x] **9. Taxas transparentes + extrato**: fee da plataforma visível em toda tela de compra (ex: "Plataforma retém 20%"); extrato detalhado para criadores com filtros por período e tipo de receita
+- [x] **10. Assinaturas por criador**: criador define preço mensal/trimestral/anual; renovação automática; cancelamento self-service; grace period de 3 dias após falha de cobrança
+- [x] **11. Pay-Per-View (PPV)**: upload de conteúdo com paywall; preço visível antes da compra; acesso permanente após compra; preview desbloqueável pelo criador
+- [x] **12. Saque para criadores**: PIX com prazo D+14 do ciclo; dashboard de saldo disponível/bloqueado; histórico de saques; validação de conta bancária no KYC
+- [x] **13. Onboarding em 2 camadas**: fluxo de cadastro consumidor em < 2 min (checkbox + CPF formato + email); fluxo criador completo com KYC e tutoriais de como monetizar; emails transacionais automáticos
 
 ---
 
