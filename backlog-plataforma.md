@@ -167,10 +167,10 @@
 ### BLOCO 10 — INOVAÇÃO (Semanas 49–60)
 > Alto esforço, alto diferencial. Dispensável no médio prazo, mas define o teto do produto.
 
-- [ ] **45. AI Avatar do criador**: criador faz upload de 50+ fotos e grava áudio de referência; plataforma treina modelo personalizado (LoRA ou similar); gera variações de conteúdo com consentimento documentado; também disponível avatares de fantasia 100% fictícios
-- [ ] **46. IA para geração de conteúdo**: criador usa prompts para gerar variações do próprio conteúdo (fundos, efeitos, cenários alternativos); proibido usar rosto/voz de terceiros; moderação aplicada ao output da IA também
-- [ ] **47. Ferramentas de edição colaborativa**: fãs enviam sugestões de edição em vídeos (cortes, legendas, trilha); criador aprova ou rejeita; monetização compartilhada configurada pelo criador no aceite
-- [ ] **48. Realidade Aumentada / VR**: conteúdo VR 180°/360° upado pelo criador; viewer via app mobile (cardboard) ou WebXR; compras in-app para upgrades de resolução; sem integração de hardware proprietário no MVP
+- [x] **45. AI Avatar do criador**: criador faz upload de 50+ fotos e grava áudio de referência; plataforma treina modelo personalizado (LoRA ou similar); gera variações de conteúdo com consentimento documentado; também disponível avatares de fantasia 100% fictícios
+- [x] **46. IA para geração de conteúdo**: criador usa prompts para gerar variações do próprio conteúdo (fundos, efeitos, cenários alternativos); proibido usar rosto/voz de terceiros; moderação aplicada ao output da IA também
+- [x] **47. Ferramentas de edição colaborativa**: fãs enviam sugestões de edição em vídeos (cortes, legendas, trilha); criador aprova ou rejeita; monetização compartilhada configurada pelo criador no aceite
+- [x] **48. Realidade Aumentada / VR**: conteúdo VR 180°/360° upado pelo criador; viewer via app mobile (cardboard) ou WebXR; compras in-app para upgrades de resolução; sem integração de hardware proprietário no MVP
 
 ---
 

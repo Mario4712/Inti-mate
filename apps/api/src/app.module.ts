@@ -31,6 +31,10 @@ import { CollabModule } from "./collab/collab.module";
 import { TournamentsModule } from "./tournaments/tournaments.module";
 import { CryptoPaymentsModule } from "./crypto-payments/crypto-payments.module";
 import { LocationModule } from "./location/location.module";
+import { AiAvatarModule } from "./ai-avatar/ai-avatar.module";
+import { ContentGenModule } from "./content-gen/content-gen.module";
+import { EditSuggestionsModule } from "./edit-suggestions/edit-suggestions.module";
+import { VrContentModule } from "./vr-content/vr-content.module";
 import { DatabaseModule } from "./common/database/database.module";
 import { RedisModule } from "./common/redis/redis.module";
 import appConfig from "./config/app.config";
@@ -90,6 +94,10 @@ import appConfig from "./config/app.config";
     TournamentsModule,
     CryptoPaymentsModule,
     LocationModule,
+    AiAvatarModule,
+    ContentGenModule,
+    EditSuggestionsModule,
+    VrContentModule,
   ],
   providers: [
     // Rate limiting aplicado globalmente
