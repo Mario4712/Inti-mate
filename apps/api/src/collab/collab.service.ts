@@ -12,16 +12,16 @@ import { PrismaService } from "../common/database/prisma.service";
  *
  * Sugestões de colaboração baseadas em sobreposição de audiência:
  * - Calcula score de afinidade via assinantes em comum
- * - Mutual accept obrigatório antes de liberar contato
- * - Aceite/rejeição notifica o outro lado (via Notification)
+ * - Mutual accept obrigatório (status ACCEPTED) antes de liberar contato
  *
  * Item 40 — Collab Contract
- * - Texto gerado por IA (Anthropic) como rascunho
  * - Dupla assinatura via OTP (SMS stub — pronto para integração com Twilio/SNS)
- * - Contrato imutável armazenado no S3
+ * - Contrato imutável armazenado no S3 após status SIGNED
+ *
+ * Enums do schema:
+ *   CollabStatus: PENDING | INVITED | ACCEPTED | REJECTED | CANCELLED
+ *   ContractStatus: DRAFT | PENDING_SIGNATURES | SIGNED | EXPIRED | CANCELLED
  */
-
-const MAX_DAILY_SUGGESTIONS = 10;
 
 @Injectable()
 export class CollabService {
@@ -31,12 +31,7 @@ export class CollabService {
 
   // ─── Item 39: Sugestões ──────────────────────────────────
 
-  /**
-   * Retorna sugestões de colaboração para o criador autenticado.
-   * Algoritmo: creators que compartilham >= 10% de assinantes com o viewer.
-   */
   async getSuggestions(creatorId: string, limit = 10) {
-    // IDs dos meus assinantes
     const mySubscribers = await this.prisma.subscription.findMany({
       where:  { creatorId, status: { in: ["ACTIVE", "PAST_DUE"] } },
       select: { subscriberId: true },
@@ -48,7 +43,6 @@ export class CollabService {
 
     const mySubIds = mySubscribers.map((s) => s.subscriberId);
 
-    // Creators que esses assinantes também seguem
     const overlap = await this.prisma.subscription.findMany({
       where: {
         subscriberId: { in: mySubIds },
@@ -58,19 +52,14 @@ export class CollabService {
       select: { creatorId: true },
     });
 
-    // Frequência de sobreposição
     const freq = new Map<string, number>();
     for (const s of overlap) {
       freq.set(s.creatorId, (freq.get(s.creatorId) ?? 0) + 1);
     }
 
-    // Filtra criadores já conectados ou com match existente
     const existingMatches = await this.prisma.collabMatch.findMany({
       where: {
-        OR: [
-          { creatorAId: creatorId },
-          { creatorBId: creatorId },
-        ],
+        OR: [{ creatorAId: creatorId }, { creatorBId: creatorId }],
       },
       select: { creatorAId: true, creatorBId: true },
     });
@@ -81,7 +70,6 @@ export class CollabService {
     }
     connected.add(creatorId);
 
-    // Ordena por sobreposição, remove já conectados
     const candidates = [...freq.entries()]
       .filter(([id]) => !connected.has(id))
       .sort((a, b) => b[1] - a[1])
@@ -97,12 +85,12 @@ export class CollabService {
 
     return candidates
       .map(([id, sharedCount]) => ({
-        creatorId:       id,
-        artisticName:    profileMap.get(id)?.artisticName ?? null,
-        avatarUrl:       profileMap.get(id)?.avatarUrl    ?? null,
-        category:        profileMap.get(id)?.category     ?? null,
+        creatorId:         id,
+        artisticName:      profileMap.get(id)?.artisticName ?? null,
+        avatarUrl:         profileMap.get(id)?.avatarUrl    ?? null,
+        category:          profileMap.get(id)?.category     ?? null,
         sharedSubscribers: sharedCount,
-        overlapPct:      Math.round((sharedCount / mySubIds.length) * 100),
+        overlapPct:        Math.round((sharedCount / mySubIds.length) * 100),
       }))
       .filter((c) => c.artisticName !== null);
   }
@@ -140,22 +128,23 @@ export class CollabService {
     });
 
     if (existing) {
-      if (existing.status === "MATCHED") {
+      if (existing.status === "ACCEPTED") {
         throw new BadRequestException("Vocês já têm um match ativo");
       }
-      // Já existe — o outro lado aceita aqui
-      if (existing.status === "PENDING") {
+      // Já existe INVITED/PENDING — o outro lado aceita aqui
+      if (existing.status === "INVITED" || existing.status === "PENDING") {
         const updated = await this.prisma.collabMatch.update({
           where: { id: existing.id },
-          data:  { status: "MATCHED" },
+          data:  { status: "ACCEPTED", acceptedAt: new Date() },
         });
-        this.logger.log(`CollabMatch MATCHED: ${creatorAId} ↔ ${creatorBId}`);
+        this.logger.log(`CollabMatch ACCEPTED: ${creatorAId} ↔ ${creatorBId}`);
         return { matched: true, matchId: updated.id };
       }
     }
 
+    // Score de compatibilidade (calculado na sugestão; aqui default 0 pois é convite direto)
     const match = await this.prisma.collabMatch.create({
-      data: { creatorAId, creatorBId, initiatorId, status: "PENDING" },
+      data: { creatorAId, creatorBId, score: 0, initiatedBy: initiatorId, status: "INVITED" },
     });
 
     return { matched: false, matchId: match.id };
@@ -180,7 +169,7 @@ export class CollabService {
     const matches = await this.prisma.collabMatch.findMany({
       where: {
         OR: [{ creatorAId: creatorId }, { creatorBId: creatorId }],
-        status: "MATCHED",
+        status: "ACCEPTED",
       },
       orderBy: { updatedAt: "desc" },
     });
@@ -188,7 +177,7 @@ export class CollabService {
     return matches.map((m) => ({
       matchId:   m.id,
       partnerId: m.creatorAId === creatorId ? m.creatorBId : m.creatorAId,
-      matchedAt: m.updatedAt,
+      matchedAt: m.acceptedAt ?? m.updatedAt,
     }));
   }
 
@@ -196,7 +185,7 @@ export class CollabService {
     return this.prisma.collabMatch.findMany({
       where: {
         OR: [{ creatorAId: creatorId }, { creatorBId: creatorId }],
-        status: "PENDING",
+        status: { in: ["PENDING", "INVITED"] },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -208,15 +197,15 @@ export class CollabService {
     creatorId: string,
     matchId:   string,
     data: {
-      title:       string;
-      description: string;
+      title:           string;
+      description:     string;
       revenueSharePct: number;
       durationDays:    number;
     },
   ) {
     const match = await this.prisma.collabMatch.findUnique({ where: { id: matchId } });
-    if (!match || match.status !== "MATCHED") {
-      throw new BadRequestException("Match inativo ou inexistente");
+    if (!match || match.status !== "ACCEPTED") {
+      throw new BadRequestException("Match precisa estar ACCEPTED para criar contrato");
     }
     if (match.creatorAId !== creatorId && match.creatorBId !== creatorId) {
       throw new ForbiddenException();
@@ -229,17 +218,25 @@ export class CollabService {
     const startsAt = new Date();
     const endsAt   = new Date(startsAt.getTime() + data.durationDays * 86_400_000);
 
+    // Mapeia para os campos reais do schema CollabContract
+    const terms = {
+      revenueSharePct: data.revenueSharePct,
+      durationDays:    data.durationDays,
+      startsAt:        startsAt.toISOString(),
+      endsAt:          endsAt.toISOString(),
+    };
+    const fullText = `CONTRATO DE COLABORAÇÃO\n\nPartes: ${match.creatorAId} e ${match.creatorBId}\n\nTítulo: ${data.title}\n\nDescrição: ${data.description}\n\nDivisão de receita: ${data.revenueSharePct}%\n\nVigência: ${data.durationDays} dias a partir de ${startsAt.toLocaleDateString("pt-BR")}.`;
+    const summary  = `${data.title} — divisão de receita ${data.revenueSharePct}%, vigência ${data.durationDays} dias.`;
+
     const contract = await this.prisma.collabContract.create({
       data: {
         matchId,
-        creatorAId:      match.creatorAId,
-        creatorBId:      match.creatorBId,
-        title:           data.title,
-        description:     data.description,
-        revenueSharePct: data.revenueSharePct,
-        startsAt,
-        endsAt,
-        status:          "DRAFT",
+        creatorAId: match.creatorAId,
+        creatorBId: match.creatorBId,
+        terms,
+        fullText,
+        summary,
+        status: "DRAFT",
       },
     });
 
@@ -248,7 +245,7 @@ export class CollabService {
 
   /**
    * OTP de assinatura — stub pronto para Twilio/SNS.
-   * Ambos os criadores devem chamar este endpoint com OTPs distintos.
+   * Ambos os criadores devem chamar este endpoint.
    */
   async signContract(creatorId: string, contractId: string, otp: string) {
     const contract = await this.prisma.collabContract.findUnique({ where: { id: contractId } });
@@ -256,8 +253,8 @@ export class CollabService {
     if (contract.creatorAId !== creatorId && contract.creatorBId !== creatorId) {
       throw new ForbiddenException();
     }
-    if (contract.status === "ACTIVE") {
-      throw new BadRequestException("Contrato já está ativo");
+    if (contract.status === "SIGNED") {
+      throw new BadRequestException("Contrato já está assinado");
     }
 
     // Stub: em produção validar OTP via Redis (TTL 10min) enviado por SMS
@@ -267,27 +264,26 @@ export class CollabService {
 
     const isCreatorA = contract.creatorAId === creatorId;
     const updateData: any = isCreatorA
-      ? { signedByAAt: new Date() }
-      : { signedByBAt: new Date() };
+      ? { signedByAAt: new Date(), status: "PENDING_SIGNATURES" }
+      : { signedByBAt: new Date(), status: "PENDING_SIGNATURES" };
 
     const updated = await this.prisma.collabContract.update({
       where: { id: contractId },
       data:  updateData,
     });
 
-    // Ativo quando ambos assinaram
+    // SIGNED quando ambos assinaram
     if (updated.signedByAAt && updated.signedByBAt) {
       await this.prisma.collabContract.update({
         where: { id: contractId },
-        data:  { status: "ACTIVE" },
+        data:  { status: "SIGNED" },
       });
-      this.logger.log(`CollabContract ACTIVE: ${contractId}`);
-
+      this.logger.log(`CollabContract SIGNED: ${contractId}`);
       // TODO produção: armazenar PDF imutável no S3 com hash SHA-256
-      return { status: "ACTIVE", contractId };
+      return { status: "SIGNED", contractId };
     }
 
-    return { status: "AWAITING_SECOND_SIGNATURE", contractId };
+    return { status: "PENDING_SIGNATURES", contractId };
   }
 
   async getContract(creatorId: string, contractId: string) {
@@ -303,7 +299,7 @@ export class CollabService {
     return this.prisma.collabContract.findMany({
       where: {
         OR: [{ creatorAId: creatorId }, { creatorBId: creatorId }],
-        status: { in: ["DRAFT", "ACTIVE"] },
+        status: { in: ["DRAFT", "PENDING_SIGNATURES"] },
       },
       orderBy: { createdAt: "desc" },
     });

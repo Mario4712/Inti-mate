@@ -198,7 +198,7 @@ export class VrContentService {
 
     // PPV purchase ou plano premium
     const ppv = await this.prisma.ppvPurchase.findFirst({
-      where: { userId: viewerId },
+      where: { buyerId: viewerId },
     });
     if (ppv) return "PREMIUM";
 

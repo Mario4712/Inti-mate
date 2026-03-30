@@ -62,14 +62,13 @@ export class LocationService {
         create: { userId, city: city.trim(), state: s, expiresAt },
         update: { city: city.trim(), state: s, optedInAt: new Date(), expiresAt },
       }),
-      // Registra consentimento (LGPD Art. 7 I)
+      // Registra consentimento explícito (LGPD Art. 7 I)
       this.prisma.consentRecord.create({
         data: {
           userId,
-          type:      "TERMS",
-          ipAddress: null,
-          version:   "location-v1",
-          grantedAt: new Date(),
+          type:     "DATA_PROCESSING",  // ConsentType enum — processamento de localização
+          version:  "location-v1",
+          accepted: true,               // campo obrigatório no schema
         },
       }),
     ]);

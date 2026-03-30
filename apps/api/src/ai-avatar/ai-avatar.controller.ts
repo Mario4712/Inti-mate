@@ -82,12 +82,8 @@ export class AiAvatarController {
 
   @Get(":avatarId")
   @ApiOperation({ summary: "Info pública de um avatar (status + permissão de fã)" })
-  async getPublicInfo(@Param("avatarId") avatarId: string) {
-    const a = await this.service["prisma"].aiAvatar.findUnique({
-      where:  { id: avatarId },
-      select: { id: true, status: true, allowFanGeneration: true, maxGenPerDay: true },
-    });
-    return a;
+  getPublicInfo(@Param("avatarId") avatarId: string) {
+    return this.service.getAvatarPublicInfo(avatarId);
   }
 
   @Post(":avatarId/generate")

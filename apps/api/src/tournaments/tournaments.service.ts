@@ -220,12 +220,13 @@ export class TournamentsService {
       }
 
       case "REVENUE": {
+        // Tip.amount é Decimal (BRL) — soma e converte para número
         const rows = await this.prisma.tip.groupBy({
           by:    ["creatorId"],
           where: { creatorId: { in: creatorIds }, createdAt: { gte: startsAt, lte: end } },
-          _sum:  { amountCents: true },
+          _sum:  { amount: true },
         });
-        const map = new Map(rows.map((r) => [r.creatorId, r._sum.amountCents ?? 0]));
+        const map = new Map(rows.map((r) => [r.creatorId, Number(r._sum.amount ?? 0)]));
         return creatorIds.map((id) => ({ creatorId: id, score: map.get(id) ?? 0 }))
           .sort((a, b) => b.score - a.score);
       }
@@ -294,6 +295,18 @@ export class TournamentsService {
             where:  { creatorId: w.creatorId },
             create: { creatorId: w.creatorId, availableAmount: prizeCents, pendingAmount: 0 },
             update: { availableAmount: { increment: prizeCents } },
+          }),
+          this.prisma.transaction.create({
+            data: {
+              userId:      w.creatorId,
+              type:        "TIP", // tipo mais próximo disponível para premiação
+              grossAmount: prizeCents,
+              platformFee: 0,
+              netAmount:   prizeCents,
+              currency:    "BRL",
+              status:      "COMPLETED",
+              description: `Prêmio torneio — ${w.rank}º lugar`,
+            },
           }),
           this.prisma.tournamentEntry.updateMany({
             where: { tournamentId: tournament.id, creatorId: w.creatorId },

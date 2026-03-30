@@ -118,6 +118,13 @@ export class AiAvatarService {
     return this.prisma.aiAvatar.findUnique({ where: { creatorId } });
   }
 
+  async getAvatarPublicInfo(avatarId: string) {
+    return this.prisma.aiAvatar.findUnique({
+      where:  { id: avatarId },
+      select: { id: true, status: true, allowFanGeneration: true, maxGenPerDay: true },
+    });
+  }
+
   // ─── Gerar variação ──────────────────────────────────────
 
   async generate(
