@@ -1,0 +1,70 @@
+{
+  "expo": {
+    "name": "Inti.mate",
+    "slug": "inti-mate",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0a0a"
+    },
+    "scheme": "intimate",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.intimate.app",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Usamos Face ID para autenticar seu acesso ao Inti.mate.",
+        "NSCameraUsageDescription": "Necessário para enviar fotos e vídeos.",
+        "NSMicrophoneUsageDescription": "Necessário para gravação de vídeos e lives.",
+        "NSPhotoLibraryUsageDescription": "Acesso para selecionar mídia da galeria."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0a0a0a"
+      },
+      "package": "com.intimate.app",
+      "permissions": [
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "CAMERA",
+        "RECORD_AUDIO",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ],
+      "googleServicesFile": "./google-services.json"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-local-authentication",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#e91e8c",
+          "sounds": []
+        }
+      ],
+      "expo-secure-store",
+      "expo-sqlite"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "inti-mate-mobile"
+      }
+    }
+  }
+}

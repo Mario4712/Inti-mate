@@ -12,16 +12,23 @@ import { PrismaService } from "../common/database/prisma.service";
  * Item 41 — Torneios com prêmio e leaderboard
  *
  * Regras de negócio:
- * - Criado por admins ou criadores (com KYC APPROVED)
- * - Métricas: SUBSCRIBERS, TIPS, VIEWS, LIKES
- * - Prize pool em centavos (Int) — 80% ao 1º, 15% ao 2º, 5% ao 3º
- * - Regras públicas e auditáveis (campo `rules` JSON)
+ * - Criado por admins/criadores com KYC APPROVED
+ * - Métricas: NEW_SUBSCRIBERS, REVENUE, CONTENT_VIEWS
+ * - Prize pool em BRL (Decimal) — distribuição configurável via prizeDistrib
+ * - Regras públicas e auditáveis (campo rulesJson)
  * - Leaderboard calculado em tempo real via PostgreSQL
- * - Ao encerrar: pagamentos automáticos via `availableAmount`
+ * - Ao encerrar: pagamentos automáticos + status PAID
  * - Produção: substituir leaderboard por Redis sorted set para alta escala
  */
 
-const PRIZE_SPLITS = [0.8, 0.15, 0.05]; // Top 3
+type TournamentMetric = "NEW_SUBSCRIBERS" | "REVENUE" | "CONTENT_VIEWS";
+
+// Distribuição padrão: 50% / 30% / 20%
+const DEFAULT_PRIZE_DISTRIB = [
+  { rank: 1, pct: 50 },
+  { rank: 2, pct: 30 },
+  { rank: 3, pct: 20 },
+];
 
 @Injectable()
 export class TournamentsService {
@@ -34,24 +41,41 @@ export class TournamentsService {
   async create(
     adminId: string,
     data: {
-      title:       string;
-      description: string;
-      metric:      "SUBSCRIBERS" | "TIPS" | "VIEWS" | "LIKES";
-      prizePool:   number; // centavos
-      startsAt:    Date;
-      endsAt:      Date;
-      rules:       Record<string, unknown>;
+      name:         string;
+      description:  string;
+      metric:       TournamentMetric;
+      prizePoolBRL: number;
+      startsAt:     Date;
+      endsAt:       Date;
+      rulesJson:    Record<string, unknown>;
+      prizeDistrib?: Array<{ rank: number; pct: number }>;
     },
   ) {
     if (data.startsAt >= data.endsAt) {
       throw new BadRequestException("startsAt deve ser anterior a endsAt");
     }
-    if (data.prizePool < 100) {
+    if (data.prizePoolBRL < 1) {
       throw new BadRequestException("Prize pool mínimo: R$ 1,00");
     }
 
+    const distrib = data.prizeDistrib ?? DEFAULT_PRIZE_DISTRIB;
+    const totalPct = distrib.reduce((s, d) => s + d.pct, 0);
+    if (totalPct !== 100) {
+      throw new BadRequestException("prizeDistrib deve somar 100%");
+    }
+
     return this.prisma.tournament.create({
-      data: { ...data, status: "UPCOMING", rules: data.rules },
+      data: {
+        name:        data.name,
+        description: data.description,
+        metric:      data.metric,
+        prizePoolBRL: data.prizePoolBRL,
+        startsAt:    data.startsAt,
+        endsAt:      data.endsAt,
+        rulesJson:   data.rulesJson,
+        prizeDistrib: distrib,
+        status:      "UPCOMING",
+      },
     });
   }
 
@@ -60,8 +84,9 @@ export class TournamentsService {
       where:   status ? { status: status as any } : undefined,
       orderBy: { startsAt: "desc" },
       select: {
-        id: true, title: true, description: true, metric: true,
-        prizePool: true, startsAt: true, endsAt: true, status: true, rules: true,
+        id: true, name: true, description: true, metric: true,
+        prizePoolBRL: true, startsAt: true, endsAt: true,
+        status: true, rulesJson: true, prizeDistrib: true,
         _count: { select: { entries: true } },
       },
     });
@@ -85,32 +110,27 @@ export class TournamentsService {
       throw new BadRequestException("Torneio não está aberto para inscrições");
     }
 
-    // Verifica KYC
-    const kyc = await this.prisma.kYCVerification.findFirst({
-      where: { userId: creatorId, status: "APPROVED" },
+    // Verifica KYC (AgeVerification APPROVED para criador)
+    const kyc = await this.prisma.ageVerification.findFirst({
+      where: { userId: creatorId, status: "APPROVED", type: "DOCUMENT" },
     });
     if (!kyc) throw new ForbiddenException("KYC aprovado necessário para participar");
 
-    const entry = await this.prisma.tournamentEntry.upsert({
+    return this.prisma.tournamentEntry.upsert({
       where:  { tournamentId_creatorId: { tournamentId, creatorId } },
       create: { tournamentId, creatorId, score: 0 },
       update: {},
     });
-
-    return entry;
   }
 
   async leave(tournamentId: string, creatorId: string) {
     const tournament = await this.prisma.tournament.findUnique({ where: { id: tournamentId } });
     if (!tournament) throw new NotFoundException();
-    if (tournament.status === "FINISHED") {
+    if (tournament.status === "ENDED" || tournament.status === "PAID") {
       throw new BadRequestException("Não é possível sair de torneio encerrado");
     }
 
-    await this.prisma.tournamentEntry.deleteMany({
-      where: { tournamentId, creatorId },
-    });
-
+    await this.prisma.tournamentEntry.deleteMany({ where: { tournamentId, creatorId } });
     return { ok: true };
   }
 
@@ -120,48 +140,63 @@ export class TournamentsService {
     const tournament = await this.prisma.tournament.findUnique({ where: { id: tournamentId } });
     if (!tournament) throw new NotFoundException();
 
-    const entries = await this.buildLeaderboard(tournament);
-    return { tournament: { id: tournament.id, title: tournament.title, metric: tournament.metric, status: tournament.status }, entries };
+    const entries = await this.buildLeaderboard(tournament as any);
+    return {
+      tournament: {
+        id: tournament.id, name: tournament.name,
+        metric: tournament.metric, status: tournament.status,
+        prizePoolBRL: tournament.prizePoolBRL, prizeDistrib: tournament.prizeDistrib,
+      },
+      entries,
+    };
   }
 
-  private async buildLeaderboard(tournament: { id: string; metric: string; startsAt: Date; endsAt: Date }) {
-    const { id: tournamentId, metric, startsAt, endsAt } = tournament;
-
+  private async buildLeaderboard(tournament: {
+    id: string; metric: string; prizePoolBRL: any;
+    startsAt: Date; endsAt: Date; prizeDistrib: any;
+  }) {
     const registered = await this.prisma.tournamentEntry.findMany({
-      where:  { tournamentId },
+      where:  { tournamentId: tournament.id },
       select: { creatorId: true },
     });
 
     const creatorIds = registered.map((e) => e.creatorId);
     if (creatorIds.length === 0) return [];
 
-    // Calcula score real com base na métrica
-    const scores = await this.computeScores(creatorIds, metric, startsAt, endsAt);
+    const scores = await this.computeScores(creatorIds, tournament.metric, tournament.startsAt, tournament.endsAt);
 
-    // Atualiza scores no DB (para snapshot histórico)
+    // Actualiza scores no DB
     await Promise.all(
-      scores.map(({ creatorId, score }) =>
+      scores.map(({ creatorId, score }, idx) =>
         this.prisma.tournamentEntry.updateMany({
-          where: { tournamentId, creatorId },
-          data:  { score },
+          where: { tournamentId: tournament.id, creatorId },
+          data:  { score, rank: idx + 1 },
         }),
       ),
     );
 
-    // Busca perfis
     const profiles = await this.prisma.userProfile.findMany({
       where:  { userId: { in: creatorIds } },
       select: { userId: true, artisticName: true, avatarUrl: true },
     });
     const profileMap = new Map(profiles.map((p) => [p.userId, p]));
 
-    return scores.map(({ creatorId, score }, idx) => ({
-      rank:         idx + 1,
-      creatorId,
-      artisticName: profileMap.get(creatorId)?.artisticName ?? null,
-      avatarUrl:    profileMap.get(creatorId)?.avatarUrl    ?? null,
-      score,
-    }));
+    const distrib: Array<{ rank: number; pct: number }> = (tournament.prizeDistrib as any) ?? DEFAULT_PRIZE_DISTRIB;
+    const pool = Number(tournament.prizePoolBRL);
+
+    return scores.map(({ creatorId, score }, idx) => {
+      const rank   = idx + 1;
+      const pctObj = distrib.find((d) => d.rank === rank);
+      const prize  = pctObj ? Math.floor(pool * pctObj.pct / 100 * 100) / 100 : 0;
+      return {
+        rank,
+        creatorId,
+        artisticName: profileMap.get(creatorId)?.artisticName ?? null,
+        avatarUrl:    profileMap.get(creatorId)?.avatarUrl    ?? null,
+        score,
+        estimatedPrizeBRL: prize,
+      };
+    });
   }
 
   private async computeScores(
@@ -170,11 +205,10 @@ export class TournamentsService {
     startsAt:   Date,
     endsAt:     Date,
   ): Promise<Array<{ creatorId: string; score: number }>> {
-    const now = new Date();
-    const end = endsAt < now ? endsAt : now;
+    const end = endsAt < new Date() ? endsAt : new Date();
 
     switch (metric) {
-      case "SUBSCRIBERS": {
+      case "NEW_SUBSCRIBERS": {
         const rows = await this.prisma.subscription.groupBy({
           by:     ["creatorId"],
           where:  { creatorId: { in: creatorIds }, createdAt: { gte: startsAt, lte: end } },
@@ -185,7 +219,7 @@ export class TournamentsService {
           .sort((a, b) => b.score - a.score);
       }
 
-      case "TIPS": {
+      case "REVENUE": {
         const rows = await this.prisma.tip.groupBy({
           by:    ["creatorId"],
           where: { creatorId: { in: creatorIds }, createdAt: { gte: startsAt, lte: end } },
@@ -196,25 +230,13 @@ export class TournamentsService {
           .sort((a, b) => b.score - a.score);
       }
 
-      case "VIEWS": {
+      case "CONTENT_VIEWS": {
         const rows = await this.prisma.media.groupBy({
           by:    ["creatorId"],
           where: { creatorId: { in: creatorIds } },
           _sum:  { viewCount: true },
         });
         const map = new Map(rows.map((r) => [r.creatorId, r._sum.viewCount ?? 0]));
-        return creatorIds.map((id) => ({ creatorId: id, score: map.get(id) ?? 0 }))
-          .sort((a, b) => b.score - a.score);
-      }
-
-      case "LIKES": {
-        // Proxy: usar viewCount / 10 como estimativa (substituir por LikeEvent real)
-        const rows = await this.prisma.media.groupBy({
-          by:    ["creatorId"],
-          where: { creatorId: { in: creatorIds } },
-          _sum:  { viewCount: true },
-        });
-        const map = new Map(rows.map((r) => [r.creatorId, Math.floor((r._sum.viewCount ?? 0) / 10)]));
         return creatorIds.map((id) => ({ creatorId: id, score: map.get(id) ?? 0 }))
           .sort((a, b) => b.score - a.score);
       }
@@ -228,66 +250,66 @@ export class TournamentsService {
 
   @Cron(CronExpression.EVERY_MINUTE)
   async closeExpiredTournaments() {
-    const expired = await this.prisma.tournament.findMany({
-      where: { status: "ACTIVE", endsAt: { lte: new Date() } },
-    });
-
-    for (const tournament of expired) {
-      await this.finalize(tournament);
-    }
-
     // Ativa torneios que chegaram na hora de início
     await this.prisma.tournament.updateMany({
       where: { status: "UPCOMING", startsAt: { lte: new Date() } },
       data:  { status: "ACTIVE" },
     });
+
+    const expired = await this.prisma.tournament.findMany({
+      where: { status: "ACTIVE", endsAt: { lte: new Date() } },
+    });
+
+    for (const t of expired) {
+      await this.finalize(t as any);
+    }
   }
 
-  private async finalize(tournament: { id: string; metric: string; prizePool: number; startsAt: Date; endsAt: Date }) {
+  private async finalize(tournament: {
+    id: string; metric: string; prizePoolBRL: any;
+    startsAt: Date; endsAt: Date; prizeDistrib: any;
+  }) {
     const leaderboard = await this.buildLeaderboard(tournament);
 
-    if (leaderboard.length === 0) {
-      await this.prisma.tournament.update({
-        where: { id: tournament.id },
-        data:  { status: "FINISHED" },
-      });
-      return;
-    }
+    await this.prisma.tournament.update({
+      where: { id: tournament.id },
+      data:  { status: "ENDED" },
+    });
 
-    // Distribui prêmio: 80% / 15% / 5%
-    const winners = leaderboard.slice(0, 3);
+    if (leaderboard.length === 0) return;
+
+    const distrib: Array<{ rank: number; pct: number }> = (tournament.prizeDistrib as any) ?? DEFAULT_PRIZE_DISTRIB;
+    const pool = Number(tournament.prizePoolBRL);
+
     await Promise.all(
-      winners.map(async (w, idx) => {
-        const prize = Math.floor(tournament.prizePool * (PRIZE_SPLITS[idx] ?? 0));
-        if (prize === 0) return;
+      leaderboard.slice(0, distrib.length).map(async (w) => {
+        const pctObj = distrib.find((d) => d.rank === w.rank);
+        if (!pctObj || pctObj.pct === 0) return;
+
+        const prizeBRL   = Math.floor(pool * pctObj.pct) / 100;
+        const prizeCents = Math.floor(prizeBRL * 100);
 
         await this.prisma.$transaction([
           this.prisma.creatorBalance.upsert({
             where:  { creatorId: w.creatorId },
-            create: { creatorId: w.creatorId, availableAmount: prize, pendingAmount: 0 },
-            update: { availableAmount: { increment: prize } },
+            create: { creatorId: w.creatorId, availableAmount: prizeCents, pendingAmount: 0 },
+            update: { availableAmount: { increment: prizeCents } },
           }),
-          this.prisma.transaction.create({
-            data: {
-              userId:      w.creatorId,
-              type:        "WITHDRAWAL", // tipo mais próximo — em produção adicionar TOURNAMENT_PRIZE
-              amount:      prize,
-              currency:    "BRL",
-              status:      "COMPLETED",
-              description: `Prêmio torneio "${tournament.id}" — ${idx + 1}º lugar`,
-            },
+          this.prisma.tournamentEntry.updateMany({
+            where: { tournamentId: tournament.id, creatorId: w.creatorId },
+            data:  { prizeBRL: prizeBRL, paid: true },
           }),
         ]);
 
-        this.logger.log(`Tournament prize: ${w.creatorId} +R$${(prize / 100).toFixed(2)} (${idx + 1}º lugar)`);
+        this.logger.log(`Tournament prize: ${w.creatorId} +R$${prizeBRL.toFixed(2)} (${w.rank}º lugar)`);
       }),
     );
 
     await this.prisma.tournament.update({
       where: { id: tournament.id },
-      data:  { status: "FINISHED" },
+      data:  { status: "PAID" },
     });
 
-    this.logger.log(`Tournament FINISHED: ${tournament.id}`);
+    this.logger.log(`Tournament PAID: ${tournament.id}`);
   }
 }

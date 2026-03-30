@@ -151,10 +151,12 @@ model User {
   emailTokens      EmailVerificationToken[]
   consentRecords   ConsentRecord[]
   deletionRequest  DataDeletionRequest?
-  creatorPlans     CreatorPlan[]
-  subscriptions    Subscription[]    @relation("CreatorSubscriptions")
-  mySubscriptions  Subscription[]    @relation("SubscriberSubscriptions")
-  media            Media[]
+  creatorPlans       CreatorPlan[]
+  subscriptions      Subscription[]      @relation("CreatorSubscriptions")
+  mySubscriptions    Subscription[]      @relation("SubscriberSubscriptions")
+  media              Media[]
+  cryptoTransactions CryptoTransaction[]
+  location           UserLocation?
 
   @@index([email])
   @@index([username])
@@ -1136,4 +1138,64 @@ model TournamentEntry {
 
   @@unique([tournamentId, creatorId])
   @@index([tournamentId, score])
+}
+
+// ─────────────────────────────────────────────────────────────
+// BLOCO 9 — EXPANSÃO MOBILE E CRYPTO
+// ─────────────────────────────────────────────────────────────
+
+// Item 43 — Pagamentos cripto
+
+enum CryptoTxStatus {
+  PENDING               // aguardando pagamento
+  AWAITING_CONFIRMATION // pagamento detectado, aguardando confirmações
+  CONFIRMED             // confirmado on-chain
+  EXPIRED               // janela de pagamento expirou
+  FAILED
+}
+
+model CryptoTransaction {
+  id            String         @id @default(cuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id])
+
+  currency      String         @db.VarChar(10)  // BTC | USDC | USDT
+  amountCrypto  Decimal        @db.Decimal(20,8)
+  amountBRL     Decimal        @db.Decimal(10,2)
+  exchangeRate  Decimal        @db.Decimal(20,8)
+
+  status        CryptoTxStatus @default(PENDING)
+  providerRef   String?        // charge ID do Coinbase Commerce / BTCPay
+  walletAddress String         @db.VarChar(200)
+
+  // KYC tier: LOW = só email+wallet (<R$2k/mês); HIGH = KYC completo
+  kycTier       String         @default("LOW")  // LOW | HIGH
+
+  confirmedAt   DateTime?
+  expiresAt     DateTime
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([userId])
+  @@index([providerRef])
+  @@index([status, expiresAt])
+}
+
+// Item 44 — Matches por região
+
+model UserLocation {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  city      String   @db.VarChar(100)
+  state     String   @db.VarChar(2)    // sigla do estado (ex: SP, RJ)
+  country   String   @default("BR")   @db.VarChar(2)
+
+  optedInAt DateTime @default(now())
+  expiresAt DateTime  // 30 dias — purge automático @Cron
+
+  @@index([state])
+  @@index([expiresAt])
 }

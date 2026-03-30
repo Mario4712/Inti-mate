@@ -4,28 +4,40 @@ import {
 } from "@nestjs/common";
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from "@nestjs/swagger";
 import {
-  IsString, IsInt, IsEnum, IsObject, MaxLength, Min,
-  IsDateString,
+  IsString, IsNumber, IsEnum, IsObject, IsOptional,
+  IsArray, ValidateNested, MaxLength, Min, IsDateString,
 } from "class-validator";
 import { Type } from "class-transformer";
 import { TournamentsService } from "./tournaments.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
+class PrizeDistribEntryDto {
+  @IsNumber() rank: number;
+  @IsNumber() @Min(1) pct: number;
+}
+
 class CreateTournamentDto {
-  @IsString() @MaxLength(120)  title:       string;
+  @IsString() @MaxLength(200)  name:        string;
   @IsString() @MaxLength(2000) description: string;
 
-  @IsEnum(["SUBSCRIBERS", "TIPS", "VIEWS", "LIKES"])
-  metric: "SUBSCRIBERS" | "TIPS" | "VIEWS" | "LIKES";
+  @IsEnum(["NEW_SUBSCRIBERS", "REVENUE", "CONTENT_VIEWS"])
+  metric: "NEW_SUBSCRIBERS" | "REVENUE" | "CONTENT_VIEWS";
 
-  @IsInt() @Min(100)
+  @IsNumber() @Min(1)
   @Type(() => Number)
-  prizePool: number; // centavos
+  prizePoolBRL: number;
 
   @IsDateString() startsAt: string;
   @IsDateString() endsAt:   string;
 
-  @IsObject() rules: Record<string, unknown>;
+  @IsObject()
+  rulesJson: Record<string, unknown>;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PrizeDistribEntryDto)
+  prizeDistrib?: PrizeDistribEntryDto[];
 }
 
 @ApiTags("Tournaments")
@@ -36,7 +48,7 @@ export class TournamentsController {
   constructor(private readonly service: TournamentsService) {}
 
   @Post()
-  @ApiOperation({ summary: "Cria torneio (admin/criador KYC)" })
+  @ApiOperation({ summary: "Cria torneio (requer KYC APPROVED)" })
   create(@Body() dto: CreateTournamentDto, @Request() req: any) {
     return this.service.create(req.user.sub, {
       ...dto,
@@ -46,8 +58,8 @@ export class TournamentsController {
   }
 
   @Get()
-  @ApiOperation({ summary: "Lista torneios (filtra por status)" })
-  @ApiQuery({ name: "status", required: false, enum: ["UPCOMING", "ACTIVE", "FINISHED"] })
+  @ApiOperation({ summary: "Lista torneios" })
+  @ApiQuery({ name: "status", required: false, enum: ["UPCOMING", "ACTIVE", "ENDED", "PAID"] })
   findAll(@Query("status") status?: string) {
     return this.service.findAll(status);
   }
@@ -59,7 +71,7 @@ export class TournamentsController {
   }
 
   @Post(":id/enter")
-  @ApiOperation({ summary: "Inscrever-se no torneio (requer KYC APPROVED)" })
+  @ApiOperation({ summary: "Inscrever-se no torneio (requer KYC DOCUMENT APPROVED)" })
   enter(@Param("id") id: string, @Request() req: any) {
     return this.service.enter(id, req.user.sub);
   }

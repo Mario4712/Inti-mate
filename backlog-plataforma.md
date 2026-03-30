@@ -158,9 +158,9 @@
 ### BLOCO 9 — EXPANSÃO MOBILE E CRYPTO (Semanas 41–48)
 > Expansão de plataforma e meios de pagamento alternativos.
 
-- [ ] **42. App mobile nativo (iOS + Android)**: React Native ou capacitor a partir da PWA; notificações push nativas; biometria para login; modo offline para teasers; submissão nas lojas (com categoria adulta restrita)
-- [ ] **43. Cripto com KYC escalonado**: aceitar BTC, USDC, USDT via Coinbase Commerce ou BTCPay Server; transações < R$ 2k/mês com email + wallet; acima disso KYC completo automático; não Monero
-- [ ] **44. Matches por região**: opt-in explícito com prompt claro; armazena apenas cidade/estado (nunca coordenadas); retenção de 30 dias; usado para "criadores perto de você" e collabs locais
+- [x] **42. App mobile nativo (iOS + Android)**: React Native ou capacitor a partir da PWA; notificações push nativas; biometria para login; modo offline para teasers; submissão nas lojas (com categoria adulta restrita)
+- [x] **43. Cripto com KYC escalonado**: aceitar BTC, USDC, USDT via Coinbase Commerce ou BTCPay Server; transações < R$ 2k/mês com email + wallet; acima disso KYC completo automático; não Monero
+- [x] **44. Matches por região**: opt-in explícito com prompt claro; armazena apenas cidade/estado (nunca coordenadas); retenção de 30 dias; usado para "criadores perto de você" e collabs locais
 
 ---
 

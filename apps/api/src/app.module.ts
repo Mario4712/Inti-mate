@@ -29,6 +29,8 @@ import { AiPersonaModule } from "./ai-persona/ai-persona.module";
 import { RecommendationsModule } from "./recommendations/recommendations.module";
 import { CollabModule } from "./collab/collab.module";
 import { TournamentsModule } from "./tournaments/tournaments.module";
+import { CryptoPaymentsModule } from "./crypto-payments/crypto-payments.module";
+import { LocationModule } from "./location/location.module";
 import { DatabaseModule } from "./common/database/database.module";
 import { RedisModule } from "./common/redis/redis.module";
 import appConfig from "./config/app.config";
@@ -86,6 +88,8 @@ import appConfig from "./config/app.config";
     RecommendationsModule,
     CollabModule,
     TournamentsModule,
+    CryptoPaymentsModule,
+    LocationModule,
   ],
   providers: [
     // Rate limiting aplicado globalmente
