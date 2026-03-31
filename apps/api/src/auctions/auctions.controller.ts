@@ -36,7 +36,7 @@ export class AuctionsController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Criador: cria um leilão de conteúdo exclusivo" })
   create(@Body() dto: CreateAuctionDto, @Request() req: any) {
-    return this.service.create(req.user.sub, {
+    return this.service.create(req.user.id, {
       title:       dto.title,
       description: dto.description,
       mediaId:     dto.mediaId,
@@ -67,7 +67,7 @@ export class AuctionsController {
     @Body() dto: PlaceBidDto,
     @Request() req: any,
   ) {
-    return this.service.placeBid(auctionId, req.user.sub, dto.amountCents);
+    return this.service.placeBid(auctionId, req.user.id, dto.amountCents);
   }
 
   @Post(":auctionId/deliver")
@@ -78,6 +78,6 @@ export class AuctionsController {
     @Body() dto: DeliverDto,
     @Request() req: any,
   ) {
-    return this.service.deliverToWinner(req.user.sub, auctionId, dto.mediaKey);
+    return this.service.deliverToWinner(req.user.id, auctionId, dto.mediaKey);
   }
 }

@@ -41,7 +41,7 @@ export class VrContentController {
   @ApiOperation({ summary: "Criador: registra metadados VR em um conteúdo existente" })
   attach(@Body() dto: AttachVrDto, @Request() req: any) {
     const { mediaId, ...rest } = dto;
-    return this.service.attachVrMetadata(req.user.sub, mediaId, rest);
+    return this.service.attachVrMetadata(req.user.id, mediaId, rest);
   }
 
   @Get()
@@ -65,7 +65,7 @@ export class VrContentController {
     description: "Retorna formato, modo estéreo, FOV e qualidade máxima disponível para o viewer.",
   })
   webXrConfig(@Param("mediaId") mediaId: string, @Request() req: any) {
-    return this.service.getWebXrConfig(mediaId, req.user.sub);
+    return this.service.getWebXrConfig(mediaId, req.user.id);
   }
 
   @Get(":mediaId/access/:quality")
@@ -82,6 +82,6 @@ export class VrContentController {
     if (!["2K", "4K", "8K"].includes(quality)) {
       throw new Error("Qualidade inválida. Use: 2K, 4K ou 8K");
     }
-    return this.service.getAccessUrl(req.user.sub, mediaId, quality as any);
+    return this.service.getAccessUrl(req.user.id, mediaId, quality as any);
   }
 }

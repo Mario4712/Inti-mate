@@ -8,20 +8,14 @@ import { UpdatePreferencesDto, RegisterPushDto } from "./dto/notifications.dto";
 
 const MAX_PUSH_PER_DAY = 5;
 
-export type NotificationType =
-  | "NEW_CONTENT"
-  | "NEW_MESSAGE"
-  | "NEW_SUBSCRIBER"
-  | "PAYMENT_RECEIVED"
-  | "SYSTEM";
+import { NotificationType } from "@intimare/database";
 
 export interface NotificationPayload {
   userId:  string;
   type:    NotificationType;
   title:   string;
   body:    string;
-  url?:    string;
-  data?:   Record<string, unknown>;
+  link?:   string;
 }
 
 @Injectable()
@@ -41,7 +35,7 @@ export class NotificationsService {
   // ─── Envio ────────────────────────────────────────────────
 
   async send(payload: NotificationPayload): Promise<void> {
-    const { userId, type, title, body, url, data } = payload;
+    const { userId, type, title, body, link } = payload;
 
     const prefs = await this.prisma.notificationPreference.findUnique({
       where: { userId },
@@ -54,12 +48,12 @@ export class NotificationsService {
 
     // Persistir notificação no banco
     const notification = await this.prisma.notification.create({
-      data: { userId, type, title, body, url: url ?? null, data: data ?? {} },
+      data: { userId, type, title, body, link: link ?? null },
     });
 
     // Web Push (se habilitado nas preferências)
     if (!prefs || prefs.pushEnabled !== false) {
-      await this.sendWebPush(userId, { title, body, url }, notification.id);
+      await this.sendWebPush(userId, { title, body, url: link }, notification.id);
     }
   }
 
@@ -146,17 +140,10 @@ export class NotificationsService {
 
   private isTypeEnabled(type: NotificationType, prefs: any): boolean {
     if (!prefs) return true; // defaults todos habilitados
+    if (type === "SYSTEM") return true; // notificações do sistema sempre habilitadas
 
-    const map: Record<NotificationType, string> = {
-      NEW_CONTENT:      "newContent",
-      NEW_MESSAGE:      "newMessage",
-      NEW_SUBSCRIBER:   "newSubscriber",
-      PAYMENT_RECEIVED: "paymentReceived",
-      SYSTEM:           "pushEnabled",
-    };
-
-    const field = map[type];
-    return field ? prefs[field] !== false : true;
+    const disabledTypes: string[] = prefs.disabledTypes ?? [];
+    return !disabledTypes.includes(type);
   }
 
   private async sendWebPush(

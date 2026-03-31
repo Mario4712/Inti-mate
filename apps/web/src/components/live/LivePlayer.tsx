@@ -65,7 +65,7 @@ export function LivePlayer({ liveId, creatorName }: LivePlayerProps) {
   );
 
   return (
-    <div className="flex h-screen flex-col bg-gray-950 lg:flex-row">
+    <div className="flex h-[100dvh] flex-col bg-gray-950 lg:flex-row">
       {/* Player de vídeo (LiveKit embed) */}
       <div className="relative flex-1 bg-black">
         <div className="flex h-full items-center justify-center">
@@ -97,7 +97,7 @@ export function LivePlayer({ liveId, creatorName }: LivePlayerProps) {
       </div>
 
       {/* Painel lateral: super chats + envio */}
-      <div className="flex w-full flex-col border-t border-gray-800 lg:w-80 lg:border-l lg:border-t-0">
+      <div className="flex min-h-[240px] w-full flex-col border-t border-gray-800 lg:min-h-0 lg:w-80 lg:border-l lg:border-t-0">
         {/* Histórico */}
         <div ref={chatRef} className="flex-1 overflow-y-auto p-3 space-y-2">
           {superChats.length === 0 && (

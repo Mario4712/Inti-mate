@@ -35,7 +35,7 @@ export class SchedulerController {
   @Post("posts")
   @ApiOperation({ summary: "Agenda post de teaser para Instagram, X/Twitter ou TikTok" })
   schedule(@Body() dto: CreatePostDto, @Request() req: any) {
-    return this.service.schedulePost(req.user.sub, {
+    return this.service.schedulePost(req.user.id, {
       platform:    dto.platform,
       caption:     dto.caption,
       mediaUrl:    dto.mediaUrl,
@@ -47,25 +47,25 @@ export class SchedulerController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Cancela post agendado" })
   cancel(@Param("postId") postId: string, @Request() req: any) {
-    return this.service.cancelPost(req.user.sub, postId);
+    return this.service.cancelPost(req.user.id, postId);
   }
 
   @Get("posts")
   @ApiOperation({ summary: "Lista todos os posts agendados e publicados" })
   list(@Request() req: any) {
-    return this.service.listPosts(req.user.sub);
+    return this.service.listPosts(req.user.id);
   }
 
   @Get("suggest")
   @ApiOperation({ summary: "Sugere melhores horários para publicar baseado na atividade dos assinantes" })
   suggest(@Request() req: any) {
-    return this.service.suggestBestTimes(req.user.sub);
+    return this.service.suggestBestTimes(req.user.id);
   }
 
   @Get("report")
   @ApiOperation({ summary: "Relatório de cliques e conversões por plataforma" })
   report(@Request() req: any) {
-    return this.service.getReport(req.user.sub);
+    return this.service.getReport(req.user.id);
   }
 
   // Endpoint público para rastrear cliques via link de redirecionamento

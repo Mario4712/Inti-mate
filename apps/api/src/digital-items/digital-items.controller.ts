@@ -22,13 +22,13 @@ export class DigitalItemsController {
   @Post()
   @ApiOperation({ summary: "Criador: cria item digital no catálogo" })
   createItem(@Body() dto: CreateDigitalItemDto, @Request() req: any) {
-    return this.service.createItem(req.user.sub, dto);
+    return this.service.createItem(req.user.id, dto);
   }
 
   @Patch(":itemId/deactivate")
   @ApiOperation({ summary: "Criador: desativa item do catálogo" })
   deactivate(@Param("itemId") itemId: string, @Request() req: any) {
-    return this.service.deactivateItem(req.user.sub, itemId);
+    return this.service.deactivateItem(req.user.id, itemId);
   }
 
   @Get("catalog/:creatorId")
@@ -42,7 +42,7 @@ export class DigitalItemsController {
   @Post("orders")
   @ApiOperation({ summary: "Comprador: realiza pedido de item digital" })
   createOrder(@Body() dto: CreateOrderDto, @Request() req: any) {
-    return this.service.createOrder(req.user.sub, dto);
+    return this.service.createOrder(req.user.id, dto);
   }
 
   @Patch("orders/:orderId/deliver")
@@ -52,7 +52,7 @@ export class DigitalItemsController {
     @Body("deliveryUrl") deliveryUrl: string,
     @Request() req: any,
   ) {
-    return this.service.deliverOrder(req.user.sub, orderId, deliveryUrl);
+    return this.service.deliverOrder(req.user.id, orderId, deliveryUrl);
   }
 
   @Get("orders/mine")
@@ -62,7 +62,7 @@ export class DigitalItemsController {
     @Query("page",  new DefaultValuePipe(1),  ParseIntPipe) page:  number,
     @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit: number,
   ) {
-    return this.service.getMyOrders(req.user.sub, page, limit);
+    return this.service.getMyOrders(req.user.id, page, limit);
   }
 
   @Get("orders/creator")
@@ -72,6 +72,6 @@ export class DigitalItemsController {
     @Query("page",  new DefaultValuePipe(1),  ParseIntPipe) page:  number,
     @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit: number,
   ) {
-    return this.service.getCreatorOrders(req.user.sub, page, limit);
+    return this.service.getCreatorOrders(req.user.id, page, limit);
   }
 }

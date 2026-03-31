@@ -9,9 +9,18 @@ import { PrismaService } from "../common/database/prisma.service";
 import { StorageService } from "../content/storage.service";
 import { MediaProcessorService } from "../content/media-processor.service";
 import { ModerationService } from "../moderation/moderation.service";
+import { MediaType } from "@intimare/database";
 
 const STORY_TTL_HOURS = 24;
 const ALLOWED_MIME    = ["image/jpeg", "image/png", "image/webp", "video/mp4", "video/webm"];
+
+const MIME_TO_MEDIA_TYPE: Record<string, MediaType> = {
+  "image/jpeg": MediaType.PHOTO,
+  "image/png":  MediaType.PHOTO,
+  "image/webp": MediaType.PHOTO,
+  "video/mp4":  MediaType.VIDEO,
+  "video/webm": MediaType.VIDEO,
+};
 
 @Injectable()
 export class StoriesService {
@@ -60,11 +69,13 @@ export class StoriesService {
       `creators/${creatorId}/stories`,
     );
 
+    const mediaType = MIME_TO_MEDIA_TYPE[mimeType] ?? MediaType.PHOTO;
+
     const story = await this.prisma.story.create({
       data: {
         creatorId,
         mediaUrl,
-        mimeType,
+        mediaType,
         expiresAt,
       },
     });
@@ -97,16 +108,9 @@ export class StoriesService {
       where: {
         creatorId:  { in: creatorIds },
         expiresAt:  { gte: new Date() },
-        deletedAt:  null,
       },
       orderBy: { createdAt: "desc" },
       include: {
-        creator: {
-          select: {
-            id: true,
-            profile: { select: { artisticName: true, avatarUrl: true } },
-          },
-        },
         views: {
           where: { viewerId },
           select: { id: true },
@@ -116,9 +120,9 @@ export class StoriesService {
 
     return stories.map((s) => ({
       id:        s.id,
-      creator:   s.creator,
+      creatorId: s.creatorId,
       mediaUrl:  s.mediaUrl,
-      mimeType:  s.mimeType,
+      mediaType: s.mediaType,
       expiresAt: s.expiresAt,
       viewed:    s.views.length > 0,
       viewCount: s.viewCount,
@@ -134,7 +138,6 @@ export class StoriesService {
       where: {
         creatorId,
         expiresAt: { gte: new Date() },
-        deletedAt: null,
       },
       orderBy: { createdAt: "asc" },
     });
@@ -142,7 +145,7 @@ export class StoriesService {
     return stories.map((s) => ({
       id:        s.id,
       mediaUrl:  hasAccess ? s.mediaUrl : null,
-      mimeType:  s.mimeType,
+      mediaType: s.mediaType,
       expiresAt: s.expiresAt,
       viewCount: s.viewCount,
       locked:    !hasAccess,
@@ -153,7 +156,7 @@ export class StoriesService {
 
   async recordView(storyId: string, viewerId: string) {
     const story = await this.prisma.story.findFirst({
-      where: { id: storyId, expiresAt: { gte: new Date() }, deletedAt: null },
+      where: { id: storyId, expiresAt: { gte: new Date() } },
     });
     if (!story) throw new NotFoundException("Story não encontrado ou expirado");
 
@@ -182,10 +185,10 @@ export class StoriesService {
 
   @Cron(CronExpression.EVERY_HOUR)
   async expireStories() {
+    // Deleta stories expirados e seus arquivos
     const expired = await this.prisma.story.findMany({
       where: {
-        expiresAt:  { lt: new Date() },
-        deletedAt:  null,
+        expiresAt: { lt: new Date() },
       },
       select: { id: true, mediaUrl: true },
     });
@@ -196,9 +199,8 @@ export class StoriesService {
           const key = story.mediaUrl.split("/").slice(3).join("/");
           await this.storage.deleteMedia(key).catch(() => {});
         }
-        await this.prisma.story.update({
+        await this.prisma.story.delete({
           where: { id: story.id },
-          data:  { deletedAt: new Date() },
         });
       } catch (err) {
         this.logger.error(`Erro ao expirar story ${story.id}:`, err);

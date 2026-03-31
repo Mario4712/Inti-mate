@@ -37,7 +37,7 @@ export class CryptoPaymentsController {
     description: "< R$2k/mês: só email+wallet. >= R$2k/mês: requer KYC DOCUMENT. Monero não aceito.",
   })
   createCharge(@Body() dto: CreateChargeDto, @Request() req: any) {
-    return this.service.createCharge(req.user.sub, dto.amountBRL, dto.currency);
+    return this.service.createCharge(req.user.id, dto.amountBRL, dto.currency);
   }
 
   @Get("history")
@@ -49,7 +49,7 @@ export class CryptoPaymentsController {
     @Query("page",  new DefaultValuePipe(1),  ParseIntPipe) page:  number,
     @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit: number,
   ) {
-    return this.service.getHistory(req.user.sub, page, limit);
+    return this.service.getHistory(req.user.id, page, limit);
   }
 
   @Get(":txId")
@@ -57,7 +57,7 @@ export class CryptoPaymentsController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Detalhes de uma transação cripto" })
   getOne(@Param("txId") txId: string, @Request() req: any) {
-    return this.service.getTransaction(req.user.sub, txId);
+    return this.service.getTransaction(req.user.id, txId);
   }
 
   @Post("webhook")

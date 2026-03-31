@@ -65,9 +65,12 @@ export class AuthService {
 
     // Criação do usuário + perfil + verificação de idade + registros de consentimento
     const user = await this.prisma.$transaction(async (tx) => {
+      const username = await this.generateUsername(dto.email, tx);
+
       const newUser = await tx.user.create({
         data: {
           email: dto.email.toLowerCase(),
+          username,
           passwordHash,
           role: dto.role ?? Role.CONSUMER,
           cpfHash,
@@ -421,5 +424,17 @@ export class AuthService {
     const match = duration.match(/^(\d+)([smhd])$/);
     if (!match) return 604800; // 7d padrão
     return parseInt(match[1]) * (units[match[2]] ?? 1);
+  }
+
+  private async generateUsername(email: string, tx: any): Promise<string> {
+    const base = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "").slice(0, 20).toLowerCase();
+    let username = base || "user";
+    let suffix = 0;
+    while (true) {
+      const candidate = suffix === 0 ? username : `${username}${suffix}`;
+      const exists = await tx.user.findUnique({ where: { username: candidate } });
+      if (!exists) return candidate;
+      suffix++;
+    }
   }
 }

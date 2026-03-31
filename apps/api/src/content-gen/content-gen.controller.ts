@@ -41,7 +41,7 @@ export class ContentGenController {
       "Limite: 20/dia. Output passa por moderação automática + CSAM check.",
   })
   create(@Body() dto: CreateJobDto, @Request() req: any) {
-    return this.service.createJob(req.user.sub, dto.prompt, dto.jobType, dto.inputKey);
+    return this.service.createJob(req.user.id, dto.prompt, dto.jobType, dto.inputKey);
   }
 
   @Get()
@@ -51,13 +51,13 @@ export class ContentGenController {
     @Query("page",  new DefaultValuePipe(1),  ParseIntPipe) page:  number,
     @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit: number,
   ) {
-    return this.service.listJobs(req.user.sub, page, limit);
+    return this.service.listJobs(req.user.id, page, limit);
   }
 
   @Get(":jobId")
   @ApiOperation({ summary: "Status e resultado de um job" })
   getJob(@Param("jobId") jobId: string, @Request() req: any) {
-    return this.service.getJob(jobId, req.user.sub);
+    return this.service.getJob(jobId, req.user.id);
   }
 
   @Post(":jobId/moderate")

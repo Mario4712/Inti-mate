@@ -45,13 +45,13 @@ export class AiPersonaController {
   @Put("creator/config")
   @ApiOperation({ summary: "Criador: configura ou atualiza a IA persona" })
   upsert(@Body() dto: UpsertPersonaDto, @Request() req: any) {
-    return this.service.upsertPersona(req.user.sub, dto);
+    return this.service.upsertPersona(req.user.id, dto);
   }
 
   @Get("creator/config")
   @ApiOperation({ summary: "Criador: busca configuração atual da persona" })
   getConfig(@Request() req: any) {
-    return this.service.getPersona(req.user.sub);
+    return this.service.getPersona(req.user.id);
   }
 
   @Get("creator/history")
@@ -61,7 +61,7 @@ export class AiPersonaController {
     @Query("page",  new DefaultValuePipe(1),  ParseIntPipe) page:  number,
     @Query("limit", new DefaultValuePipe(50), ParseIntPipe) limit: number,
   ) {
-    return this.service.getPersonaHistory(req.user.sub, page, limit);
+    return this.service.getPersonaHistory(req.user.id, page, limit);
   }
 
   @Get(":creatorId/info")
@@ -81,6 +81,6 @@ export class AiPersonaController {
     @Body() dto: ReplyDto,
     @Request() req: any,
   ) {
-    return this.service.replyAsPersona(creatorId, req.user.sub, dto.message);
+    return this.service.replyAsPersona(creatorId, req.user.id, dto.message);
   }
 }

@@ -42,7 +42,7 @@ api.interceptors.response.use(
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
         if (typeof window !== "undefined") {
-          window.location.href = "/auth/login";
+          window.location.href = "/login";
         }
       }
     }
@@ -101,5 +101,5 @@ export const withdrawalsApi = {
 };
 
 export const paymentsApi = {
-  getTransactions: (page = 1) => api.get(`/auth/me`), // será substituído por endpoint real
+  getTransactions: (page = 1) => api.get(`/payments/transactions?page=${page}`),
 };

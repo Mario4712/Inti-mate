@@ -25,14 +25,11 @@ export class MessagesService {
   async listConversations(userId: string) {
     const conversations = await this.prisma.conversation.findMany({
       where: {
-        OR: [{ creatorId: userId }, { subscriberId: userId }],
-        deletedAt: null,
+        OR: [{ creatorId: userId }, { fanId: userId }],
       },
       orderBy: { updatedAt: "desc" },
       take: 50,
       include: {
-        creator:    { select: { id: true, profile: { select: { artisticName: true, avatarUrl: true } } } },
-        subscriber: { select: { id: true, profile: { select: { artisticName: true, avatarUrl: true } } } },
         messages: {
           orderBy: { createdAt: "desc" },
           take: 1,
@@ -44,7 +41,7 @@ export class MessagesService {
     return conversations.map((c) => ({
       id:          c.id,
       updatedAt:   c.updatedAt,
-      other:       c.creatorId === userId ? c.subscriber : c.creator,
+      otherId:     c.creatorId === userId ? c.fanId : c.creatorId,
       lastMessage: c.messages[0] ?? null,
     }));
   }
@@ -55,8 +52,7 @@ export class MessagesService {
     const conv = await this.prisma.conversation.findFirst({
       where: {
         id: conversationId,
-        OR: [{ creatorId: userId }, { subscriberId: userId }],
-        deletedAt: null,
+        OR: [{ creatorId: userId }, { fanId: userId }],
       },
     });
     if (!conv) throw new NotFoundException("Conversa não encontrada");
@@ -71,25 +67,24 @@ export class MessagesService {
       select: {
         id: true, senderId: true, body: true,
         status: true, createdAt: true,
-        mediaId: true, paidAmount: true,
+        mediaUrl: true, pricePaid: true,
       },
     });
 
-    // Marca mensagens recebidas como SEEN em background
-    this.markSeen(conversationId, userId).catch(() => {});
+    // Marca mensagens recebidas como READ em background
+    this.markRead(conversationId, userId).catch(() => {});
 
     // Para mensagens pagas do destinatário, oculta o conteúdo se não foi desbloqueado
     return messages.reverse().map((m) => {
-      if (m.paidAmount && m.paidAmount > 0 && m.senderId !== userId) {
-        // TODO: verificar PpvPurchase para o mediaId desta mensagem
-        return { ...m, body: "", mediaId: null, locked: true };
+      if (m.pricePaid && m.pricePaid > 0 && m.senderId !== userId) {
+        return { ...m, body: "", mediaUrl: null, locked: true };
       }
       return { ...m, locked: false };
     });
   }
 
   async sendMessage(senderId: string, dto: SendMessageDto) {
-    const { recipientId, body, mediaId, paidAmount } = dto;
+    const { recipientId, body, mediaUrl, pricePaid } = dto;
 
     if (senderId === recipientId) {
       throw new BadRequestException("Não é possível enviar mensagem para si mesmo");
@@ -108,9 +103,9 @@ export class MessagesService {
           conversationId: conv.id,
           senderId,
           body,
-          mediaId:    mediaId    ?? null,
-          paidAmount: paidAmount ?? null,
-          status:     "SENT",
+          mediaUrl:  mediaUrl  ?? null,
+          pricePaid: pricePaid ?? null,
+          status:    "SENT",
         },
       });
 
@@ -140,27 +135,27 @@ export class MessagesService {
       this.prisma.user.findUnique({ where: { id: userB }, select: { role: true } }),
     ]);
 
-    const creatorId    = a?.role === "CREATOR" ? userA : b?.role === "CREATOR" ? userB : userA;
-    const subscriberId = creatorId === userA ? userB : userA;
+    const creatorId = a?.role === "CREATOR" ? userA : b?.role === "CREATOR" ? userB : userA;
+    const fanId     = creatorId === userA ? userB : userA;
 
     const existing = await this.prisma.conversation.findFirst({
-      where: { creatorId, subscriberId, deletedAt: null },
+      where: { creatorId, fanId },
     });
     if (existing) return existing;
 
     return this.prisma.conversation.create({
-      data: { creatorId, subscriberId },
+      data: { creatorId, fanId },
     });
   }
 
-  private async markSeen(conversationId: string, userId: string) {
+  private async markRead(conversationId: string, userId: string) {
     await this.prisma.message.updateMany({
       where: {
         conversationId,
         senderId: { not: userId },
-        status:   { not: "SEEN" },
+        status:   { not: "READ" },
       },
-      data: { status: "SEEN" },
+      data: { status: "READ" },
     });
   }
 }

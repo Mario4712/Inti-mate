@@ -50,13 +50,13 @@ export class AiAvatarController {
   @Post("init")
   @ApiOperation({ summary: "Inicializa o AI Avatar do criador (requer KYC DOCUMENT)" })
   init(@Request() req: any) {
-    return this.service.initAvatar(req.user.sub);
+    return this.service.initAvatar(req.user.id);
   }
 
   @Post("consent")
   @ApiOperation({ summary: "Criador aceita o termo de consentimento para treinamento" })
   acceptConsent(@Request() req: any) {
-    return this.service.acceptConsent(req.user.sub);
+    return this.service.acceptConsent(req.user.id);
   }
 
   @Put("assets")
@@ -65,19 +65,19 @@ export class AiAvatarController {
     description: "Upload direto para S3 pré-assinado; este endpoint recebe apenas as keys.",
   })
   submitAssets(@Body() dto: SubmitAssetsDto, @Request() req: any) {
-    return this.service.submitAssets(req.user.sub, dto.photoKeys, dto.audioKey);
+    return this.service.submitAssets(req.user.id, dto.photoKeys, dto.audioKey);
   }
 
   @Put("config")
   @ApiOperation({ summary: "Configura permissões e limites de geração" })
   configure(@Body() dto: ConfigureAvatarDto, @Request() req: any) {
-    return this.service.configureAvatar(req.user.sub, dto.allowFanGeneration, dto.maxGenPerDay);
+    return this.service.configureAvatar(req.user.id, dto.allowFanGeneration, dto.maxGenPerDay);
   }
 
   @Get("me")
   @ApiOperation({ summary: "Retorna o avatar do criador autenticado" })
   getMyAvatar(@Request() req: any) {
-    return this.service.getAvatar(req.user.sub);
+    return this.service.getAvatar(req.user.id);
   }
 
   @Get(":avatarId")
@@ -96,18 +96,18 @@ export class AiAvatarController {
     @Body() dto: GenerateDto,
     @Request() req: any,
   ) {
-    return this.service.generate(avatarId, req.user.sub, dto.prompt);
+    return this.service.generate(avatarId, req.user.id, dto.prompt);
   }
 
   @Get("generation/:jobId")
   @ApiOperation({ summary: "Consulta status de uma geração" })
   getGeneration(@Param("jobId") jobId: string, @Request() req: any) {
-    return this.service.getGeneration(jobId, req.user.sub);
+    return this.service.getGeneration(jobId, req.user.id);
   }
 
   @Get(":avatarId/generations")
   @ApiOperation({ summary: "Histórico de gerações (apenas criador)" })
   listGenerations(@Param("avatarId") avatarId: string, @Request() req: any) {
-    return this.service.listGenerations(avatarId, req.user.sub);
+    return this.service.listGenerations(avatarId, req.user.id);
   }
 }

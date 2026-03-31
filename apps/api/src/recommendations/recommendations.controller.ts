@@ -23,7 +23,7 @@ export class RecommendationsController {
     @Query("limit",            new DefaultValuePipe(10),    ParseIntPipe)  limit:            number,
     @Query("withExplanations", new DefaultValuePipe(false), ParseBoolPipe) withExplanations: boolean,
   ) {
-    return this.service.getRecommendations(req.user.sub, limit, withExplanations);
+    return this.service.getRecommendations(req.user.id, limit, withExplanations);
   }
 
   @Get("explain/:creatorId")
@@ -32,6 +32,6 @@ export class RecommendationsController {
     @Param("creatorId") creatorId: string,
     @Request() req: any,
   ) {
-    return this.service.explainRecommendation(req.user.sub, creatorId).then((reason) => ({ reason }));
+    return this.service.explainRecommendation(req.user.id, creatorId).then((reason) => ({ reason }));
   }
 }

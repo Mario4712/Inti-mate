@@ -69,7 +69,7 @@ export default function LoginPage() {
         <div>
           <div className="flex justify-between items-center mb-1.5">
             <label className="label !mb-0" htmlFor="password">Senha</label>
-            <a href="/auth/forgot-password" className="text-xs text-brand-400 hover:underline">
+            <a href="/forgot-password" className="text-xs text-brand-400 hover:underline">
               Esqueci a senha
             </a>
           </div>
@@ -132,7 +132,7 @@ export default function LoginPage() {
 
         <p className="text-center text-sm text-gray-500">
           Não tem conta?{" "}
-          <a href="/auth/register" className="text-brand-400 hover:underline">
+          <a href="/register" className="text-brand-400 hover:underline">
             Criar conta
           </a>
         </p>

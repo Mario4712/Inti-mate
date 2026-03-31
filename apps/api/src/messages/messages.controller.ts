@@ -23,7 +23,7 @@ export class MessagesController {
   @Get("conversations")
   @ApiOperation({ summary: "Lista todas as conversas do usuário" })
   listConversations(@Request() req: any) {
-    return this.messagesService.listConversations(req.user.sub);
+    return this.messagesService.listConversations(req.user.id);
   }
 
   @Get("conversations/:conversationId")
@@ -33,12 +33,12 @@ export class MessagesController {
     @Query("before") before: string | undefined,
     @Request() req: any,
   ) {
-    return this.messagesService.getMessages(req.user.sub, conversationId, before);
+    return this.messagesService.getMessages(req.user.id, conversationId, before);
   }
 
   @Post()
   @ApiOperation({ summary: "Envia uma mensagem (suporta mensagem paga)" })
   sendMessage(@Body() dto: SendMessageDto, @Request() req: any) {
-    return this.messagesService.sendMessage(req.user.sub, dto);
+    return this.messagesService.sendMessage(req.user.id, dto);
   }
 }

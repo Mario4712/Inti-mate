@@ -42,19 +42,19 @@ export class ReferralsController {
   @Get("my-code")
   @ApiOperation({ summary: "Gera/busca código de indicação do usuário" })
   myCode(@Request() req: any) {
-    return this.service.getOrCreateCode(req.user.sub);
+    return this.service.getOrCreateCode(req.user.id);
   }
 
   @Post("apply")
   @ApiOperation({ summary: "Aplica código de indicação (somente no cadastro ou primeiros 30 dias)" })
   apply(@Body() dto: ApplyCodeDto, @Request() req: any) {
-    return this.service.applyReferralCode(req.user.sub, dto.code);
+    return this.service.applyReferralCode(req.user.id, dto.code);
   }
 
   @Get("stats")
   @ApiOperation({ summary: "Estatísticas de indicações do usuário" })
   stats(@Request() req: any) {
-    return this.service.getStats(req.user.sub);
+    return this.service.getStats(req.user.id);
   }
 
   // ─── Streaks ─────────────────────────────────────────────
@@ -62,13 +62,13 @@ export class ReferralsController {
   @Post("activity")
   @ApiOperation({ summary: "Registra atividade diária do usuário (mantém streak)" })
   recordActivity(@Request() req: any) {
-    return this.service.recordActivity(req.user.sub);
+    return this.service.recordActivity(req.user.id);
   }
 
   @Get("streak")
   @ApiOperation({ summary: "Streak atual e badges do usuário" })
   streak(@Request() req: any) {
-    return this.service.getStreak(req.user.sub);
+    return this.service.getStreak(req.user.id);
   }
 
   // ─── Slots & Promoções ────────────────────────────────────
@@ -82,7 +82,7 @@ export class ReferralsController {
   @Patch("slots/config")
   @ApiOperation({ summary: "Criador: configura vagas limitadas e preço promocional" })
   upsertSlotConfig(@Body() dto: SlotConfigDto, @Request() req: any) {
-    return this.service.upsertSlotConfig(req.user.sub, {
+    return this.service.upsertSlotConfig(req.user.id, {
       maxSlots:    dto.maxSlots,
       promoPrice:  dto.promoPrice,
       promoEndsAt: dto.promoEndsAt ? new Date(dto.promoEndsAt) : null,

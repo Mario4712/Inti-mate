@@ -35,7 +35,7 @@ export class LivesController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Criador: agenda ou inicia uma live" })
   create(@Body() dto: CreateLiveDto, @Request() req: any) {
-    return this.livesService.createLive(req.user.sub, {
+    return this.livesService.createLive(req.user.id, {
       ...dto,
       scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : undefined,
     });
@@ -59,7 +59,7 @@ export class LivesController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Espectador: obtém token LiveKit para entrar na live" })
   join(@Param("liveId") liveId: string, @Request() req: any) {
-    return this.livesService.getViewerToken(liveId, req.user.sub);
+    return this.livesService.getViewerToken(liveId, req.user.id);
   }
 
   @Patch(":liveId/end")
@@ -67,7 +67,7 @@ export class LivesController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Criador: encerra a live" })
   end(@Param("liveId") liveId: string, @Request() req: any) {
-    return this.livesService.endLive(req.user.sub, liveId);
+    return this.livesService.endLive(req.user.id, liveId);
   }
 
   // ─── Super Chat ───────────────────────────────────────────
@@ -82,7 +82,7 @@ export class LivesController {
   ) {
     return this.livesService.sendSuperChat(
       liveId,
-      req.user.sub,
+      req.user.id,
       dto.amountCents / 100,
       dto.message,
     );

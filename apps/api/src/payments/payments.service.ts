@@ -46,7 +46,7 @@ export class PaymentsService {
     });
     if (existing) throw new BadRequestException("Você já possui uma assinatura ativa para este criador");
 
-    const grossAmount = plan.priceMonthly;
+    const grossAmount = Number(plan.monthlyPrice);
     const platformFee = Math.round(grossAmount * PLATFORM_FEE_PERCENT);
     const netAmount = grossAmount - platformFee;
 

@@ -34,7 +34,7 @@ export class ToysController {
   @Post("session")
   @ApiOperation({ summary: "Criador: inicia sessão de controle remoto (consentimento por sessão)" })
   startSession(@Body() dto: StartSessionDto, @Request() req: any) {
-    return this.toysService.startSession(req.user.sub, {
+    return this.toysService.startSession(req.user.id, {
       liveId:       dto.liveId,
       minIntensity: dto.minIntensity,
       maxIntensity: dto.maxIntensity,
@@ -46,13 +46,13 @@ export class ToysController {
   @Patch("session/:sessionId/end")
   @ApiOperation({ summary: "Criador: encerra sessão de controle remoto" })
   endSession(@Param("sessionId") sessionId: string, @Request() req: any) {
-    return this.toysService.endSession(req.user.sub, sessionId);
+    return this.toysService.endSession(req.user.id, sessionId);
   }
 
   @Get("session/active")
   @ApiOperation({ summary: "Criador: status da sessão ativa (se houver)" })
   activeSession(@Request() req: any) {
-    return this.toysService.getActiveSession(req.user.sub);
+    return this.toysService.getActiveSession(req.user.id);
   }
 
   // ─── Público ──────────────────────────────────────────────
@@ -73,7 +73,7 @@ export class ToysController {
     @Request() req: any,
   ) {
     return this.toysService.purchaseControl(
-      req.user.sub,
+      req.user.id,
       sessionId,
       dto.durationSec,
       dto.intensity,

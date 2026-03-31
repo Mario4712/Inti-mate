@@ -18,16 +18,16 @@ export class SendMessageDto {
   @MaxLength(2000)
   body: string;
 
-  @ApiPropertyOptional({ description: "ID de mídia paga a ser enviada com a mensagem" })
+  @ApiPropertyOptional({ description: "URL da mídia a ser enviada com a mensagem" })
   @IsOptional()
-  @IsUUID()
-  mediaId?: string;
+  @IsString()
+  mediaUrl?: string;
 
-  @ApiPropertyOptional({ description: "Valor cobrado para visualizar (mensagem paga)", minimum: 0 })
+  @ApiPropertyOptional({ description: "Valor cobrado para visualizar (mensagem paga) em centavos", minimum: 0 })
   @IsOptional()
   @IsNumber()
   @Min(0)
-  paidAmount?: number;
+  pricePaid?: number;
 }
 
 export class GetMessagesDto {

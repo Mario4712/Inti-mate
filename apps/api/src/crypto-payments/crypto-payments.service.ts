@@ -135,12 +135,14 @@ export class CryptoPaymentsService {
         // Credita o saldo do usuário (como consumidor)
         this.prisma.transaction.create({
           data: {
-            userId:      tx.userId,
-            type:        "DEPOSIT",
-            amount:      Math.round(Number(tx.amountBRL) * 100),
-            currency:    "BRL",
-            status:      "COMPLETED",
-            description: `Depósito cripto ${tx.currency} — ref ${providerRef}`,
+            userId:       tx.userId,
+            type:         "TIP",
+            grossAmount:  Math.round(Number(tx.amountBRL) * 100),
+            platformFee:  0,
+            netAmount:    Math.round(Number(tx.amountBRL) * 100),
+            currency:     "BRL",
+            status:       "PAID",
+            description:  `Depósito cripto ${tx.currency} — ref ${providerRef}`,
           },
         }),
       ]);

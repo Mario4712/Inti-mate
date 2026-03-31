@@ -34,6 +34,6 @@ export class SupportController {
   @ApiOperation({ summary: "Envia mensagem ao chatbot de suporte" })
   @ApiBody({ type: ChatMessageDto })
   chat(@Body() body: ChatMessageDto, @Request() req: any) {
-    return this.supportService.chat(req.user.sub, body.message);
+    return this.supportService.chat(req.user.id, body.message);
   }
 }

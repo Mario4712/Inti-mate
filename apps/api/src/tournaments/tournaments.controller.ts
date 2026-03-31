@@ -50,7 +50,7 @@ export class TournamentsController {
   @Post()
   @ApiOperation({ summary: "Cria torneio (requer KYC APPROVED)" })
   create(@Body() dto: CreateTournamentDto, @Request() req: any) {
-    return this.service.create(req.user.sub, {
+    return this.service.create(req.user.id, {
       ...dto,
       startsAt: new Date(dto.startsAt),
       endsAt:   new Date(dto.endsAt),
@@ -73,13 +73,13 @@ export class TournamentsController {
   @Post(":id/enter")
   @ApiOperation({ summary: "Inscrever-se no torneio (requer KYC DOCUMENT APPROVED)" })
   enter(@Param("id") id: string, @Request() req: any) {
-    return this.service.enter(id, req.user.sub);
+    return this.service.enter(id, req.user.id);
   }
 
   @Delete(":id/enter")
   @ApiOperation({ summary: "Cancelar inscrição no torneio" })
   leave(@Param("id") id: string, @Request() req: any) {
-    return this.service.leave(id, req.user.sub);
+    return this.service.leave(id, req.user.id);
   }
 
   @Get(":id/leaderboard")

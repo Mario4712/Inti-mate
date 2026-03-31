@@ -46,7 +46,7 @@ export class EditSuggestionsController {
   })
   create(@Body() dto: CreateSuggestionDto, @Request() req: any) {
     return this.service.createSuggestion(
-      req.user.sub, dto.mediaId, dto.type, dto.payload, dto.note,
+      req.user.id, dto.mediaId, dto.type, dto.payload, dto.note,
     );
   }
 
@@ -57,7 +57,7 @@ export class EditSuggestionsController {
     @Query("page",  new DefaultValuePipe(1),  ParseIntPipe) page:  number,
     @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit: number,
   ) {
-    return this.service.getFanSuggestions(req.user.sub, page, limit);
+    return this.service.getFanSuggestions(req.user.id, page, limit);
   }
 
   // ── Criador ───────────────────────────────────────────────
@@ -71,7 +71,7 @@ export class EditSuggestionsController {
     @Query("page",  new DefaultValuePipe(1),  ParseIntPipe) page:  number = 1,
     @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit: number = 20,
   ) {
-    return this.service.getCreatorSuggestions(req.user.sub, status, page, limit);
+    return this.service.getCreatorSuggestions(req.user.id, status, page, limit);
   }
 
   @Post(":id/accept")
@@ -84,12 +84,12 @@ export class EditSuggestionsController {
     @Body() dto: AcceptSuggestionDto,
     @Request() req: any,
   ) {
-    return this.service.acceptSuggestion(req.user.sub, id, dto.revenueSharePct);
+    return this.service.acceptSuggestion(req.user.id, id, dto.revenueSharePct);
   }
 
   @Post(":id/reject")
   @ApiOperation({ summary: "Criador rejeita sugestão" })
   reject(@Param("id") id: string, @Request() req: any) {
-    return this.service.rejectSuggestion(req.user.sub, id);
+    return this.service.rejectSuggestion(req.user.id, id);
   }
 }

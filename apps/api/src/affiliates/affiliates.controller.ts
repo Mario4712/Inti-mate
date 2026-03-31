@@ -22,12 +22,12 @@ export class AffiliatesController {
   @Post("register")
   @ApiOperation({ summary: "Cadastra usuário como afiliado (KYC obrigatório)" })
   register(@Body() dto: RegisterAffiliateDto, @Request() req: any) {
-    return this.service.register(req.user.sub, dto.referredByCode);
+    return this.service.register(req.user.id, dto.referredByCode);
   }
 
   @Get("dashboard")
   @ApiOperation({ summary: "Dashboard de comissões: saldo pendente, pago, histórico" })
   dashboard(@Request() req: any) {
-    return this.service.getDashboard(req.user.sub);
+    return this.service.getDashboard(req.user.id);
   }
 }

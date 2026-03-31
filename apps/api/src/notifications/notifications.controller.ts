@@ -33,19 +33,19 @@ export class NotificationsController {
     @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit: number,
     @Request() req: any,
   ) {
-    return this.notificationsService.listNotifications(req.user.sub, page, limit);
+    return this.notificationsService.listNotifications(req.user.id, page, limit);
   }
 
   @Patch(":id/read")
   @ApiOperation({ summary: "Marca notificação como lida" })
   markRead(@Param("id") id: string, @Request() req: any) {
-    return this.notificationsService.markRead(req.user.sub, id);
+    return this.notificationsService.markRead(req.user.id, id);
   }
 
   @Patch("read-all")
   @ApiOperation({ summary: "Marca todas as notificações como lidas" })
   markAllRead(@Request() req: any) {
-    return this.notificationsService.markAllRead(req.user.sub);
+    return this.notificationsService.markAllRead(req.user.id);
   }
 
   // ─── Preferências ─────────────────────────────────────────
@@ -53,13 +53,13 @@ export class NotificationsController {
   @Get("preferences")
   @ApiOperation({ summary: "Preferências de notificação do usuário" })
   getPreferences(@Request() req: any) {
-    return this.notificationsService.getPreferences(req.user.sub);
+    return this.notificationsService.getPreferences(req.user.id);
   }
 
   @Patch("preferences")
   @ApiOperation({ summary: "Atualiza preferências de notificação" })
   updatePreferences(@Body() dto: UpdatePreferencesDto, @Request() req: any) {
-    return this.notificationsService.updatePreferences(req.user.sub, dto);
+    return this.notificationsService.updatePreferences(req.user.id, dto);
   }
 
   // ─── Web Push ─────────────────────────────────────────────
@@ -67,13 +67,13 @@ export class NotificationsController {
   @Post("push/subscribe")
   @ApiOperation({ summary: "Registra subscription de Web Push" })
   subscribe(@Body() dto: RegisterPushDto, @Request() req: any) {
-    return this.notificationsService.registerPushSubscription(req.user.sub, dto);
+    return this.notificationsService.registerPushSubscription(req.user.id, dto);
   }
 
   @Delete("push/subscribe")
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Remove subscription de Web Push" })
   unsubscribe(@Body("endpoint") endpoint: string, @Request() req: any) {
-    return this.notificationsService.unregisterPushSubscription(req.user.sub, endpoint);
+    return this.notificationsService.unregisterPushSubscription(req.user.id, endpoint);
   }
 }

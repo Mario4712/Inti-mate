@@ -43,31 +43,31 @@ export class CollabController {
     @Request() req: any,
     @Query("limit", new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ) {
-    return this.service.getSuggestions(req.user.sub, limit);
+    return this.service.getSuggestions(req.user.id, limit);
   }
 
   @Post("interest")
   @ApiOperation({ summary: "Enviar interesse de colaboração (mutual accept)" })
   sendInterest(@Body() dto: SendInterestDto, @Request() req: any) {
-    return this.service.sendInterest(req.user.sub, dto.targetId);
+    return this.service.sendInterest(req.user.id, dto.targetId);
   }
 
   @Patch("match/:matchId/reject")
   @ApiOperation({ summary: "Rejeitar um match pendente" })
   rejectMatch(@Param("matchId") matchId: string, @Request() req: any) {
-    return this.service.rejectMatch(req.user.sub, matchId);
+    return this.service.rejectMatch(req.user.id, matchId);
   }
 
   @Get("matches")
   @ApiOperation({ summary: "Lista matches ativos do criador autenticado" })
   listMatches(@Request() req: any) {
-    return this.service.listMatches(req.user.sub);
+    return this.service.listMatches(req.user.id);
   }
 
   @Get("pending")
   @ApiOperation({ summary: "Lista matches pendentes (aguardando resposta)" })
   listPending(@Request() req: any) {
-    return this.service.listPending(req.user.sub);
+    return this.service.listPending(req.user.id);
   }
 
   // ── Item 40: Contratos ────────────────────────────────────
@@ -76,7 +76,7 @@ export class CollabController {
   @ApiOperation({ summary: "Cria rascunho de contrato para um match ativo" })
   createContract(@Body() dto: CreateContractDto & { matchId: string }, @Request() req: any) {
     const { matchId, ...rest } = dto;
-    return this.service.createContract(req.user.sub, matchId, rest);
+    return this.service.createContract(req.user.id, matchId, rest);
   }
 
   @Post("contracts/:contractId/sign")
@@ -89,18 +89,18 @@ export class CollabController {
     @Body() dto: SignContractDto,
     @Request() req: any,
   ) {
-    return this.service.signContract(req.user.sub, contractId, dto.otp);
+    return this.service.signContract(req.user.id, contractId, dto.otp);
   }
 
   @Get("contracts/:contractId")
   @ApiOperation({ summary: "Detalhe de um contrato" })
   getContract(@Param("contractId") contractId: string, @Request() req: any) {
-    return this.service.getContract(req.user.sub, contractId);
+    return this.service.getContract(req.user.id, contractId);
   }
 
   @Get("contracts")
   @ApiOperation({ summary: "Lista contratos ativos e rascunhos do criador" })
   listContracts(@Request() req: any) {
-    return this.service.listContracts(req.user.sub);
+    return this.service.listContracts(req.user.id);
   }
 }

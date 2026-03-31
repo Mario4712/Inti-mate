@@ -16,7 +16,7 @@ export class TipsController {
   @Post()
   @ApiOperation({ summary: "Envia gorjeta para um criador" })
   sendTip(@Body() dto: SendTipDto, @Request() req: any) {
-    return this.tipsService.sendTip(req.user.sub, dto);
+    return this.tipsService.sendTip(req.user.id, dto);
   }
 
   @Get("leaderboard/:creatorId")
@@ -35,6 +35,6 @@ export class TipsController {
     @Query("page",  new DefaultValuePipe(1),  ParseIntPipe) page:  number,
     @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit: number,
   ) {
-    return this.tipsService.getMyTips(req.user.sub, page, limit);
+    return this.tipsService.getMyTips(req.user.id, page, limit);
   }
 }

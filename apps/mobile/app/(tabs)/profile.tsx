@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity,
   Alert, ScrollView, Switch,
@@ -24,10 +24,10 @@ export default function ProfileScreen() {
   const [cacheSize,  setCacheSize]  = useState<number | null>(null);
 
   // Carrega estado biométrico e cache
-  useState(() => {
+  useEffect(() => {
     isBiometricLoginEnabled().then(setBioEnabled);
     getTeaserCacheSize().then(setCacheSize);
-  });
+  }, []);
 
   async function toggleBiometric(value: boolean) {
     const available = await isBiometricAvailable();

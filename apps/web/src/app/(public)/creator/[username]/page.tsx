@@ -95,10 +95,13 @@ function CreatorJsonLd({ creator }: { creator: CreatorProfile }) {
     },
   };
 
+  // Sanitiza para prevenir XSS via </script> em campos do usuário
+  const jsonLd = JSON.stringify(schema).replace(/</g, "\\u003c");
+
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: jsonLd }}
     />
   );
 }
@@ -132,9 +135,9 @@ export default async function CreatorPublicPage({
         </div>
 
         {/* Header */}
-        <div className="mx-auto max-w-3xl px-4">
-          <div className="relative -mt-16 flex items-end gap-4">
-            <div className="relative h-32 w-32 shrink-0 overflow-hidden rounded-full border-4 border-gray-950 bg-gray-700">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6">
+          <div className="relative -mt-12 flex flex-col items-center gap-3 sm:-mt-16 sm:flex-row sm:items-end sm:gap-4">
+            <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full border-4 border-gray-950 bg-gray-700 sm:h-32 sm:w-32">
               {creator.avatarUrl ? (
                 <Image
                   src={creator.avatarUrl}
@@ -149,8 +152,8 @@ export default async function CreatorPublicPage({
                 </div>
               )}
             </div>
-            <div className="pb-2">
-              <h1 className="text-2xl font-bold">{creator.artisticName}</h1>
+            <div className="pb-2 text-center sm:text-left">
+              <h1 className="text-xl font-bold sm:text-2xl">{creator.artisticName}</h1>
               <p className="text-sm text-gray-400">@{creator.username}</p>
             </div>
           </div>
@@ -175,7 +178,7 @@ export default async function CreatorPublicPage({
           )}
 
           {/* Stats */}
-          <div className="mt-4 flex gap-6 text-sm text-gray-400">
+          <div className="mt-4 flex flex-wrap justify-center gap-4 text-sm text-gray-400 sm:justify-start sm:gap-6">
             <span>{creator.subscriberCount.toLocaleString("pt-BR")} assinantes</span>
             {creator.category && <span>{creator.category}</span>}
           </div>
@@ -224,7 +227,7 @@ export default async function CreatorPublicPage({
               <h2 id="content-heading" className="mb-4 text-xl font-semibold">
                 Conteúdo Recente
               </h2>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {creator.recentMedia.map((media) => (
                   <div
                     key={media.id}

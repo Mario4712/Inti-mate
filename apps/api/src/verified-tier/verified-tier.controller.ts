@@ -15,7 +15,7 @@ export class VerifiedTierController {
   @Get("status")
   @ApiOperation({ summary: "Verifica se o usuário tem Acesso Verificado ativo" })
   status(@Request() req: any) {
-    return this.service.getStatus(req.user.sub);
+    return this.service.getStatus(req.user.id);
   }
 
   @Post("request")
@@ -25,12 +25,12 @@ export class VerifiedTierController {
       "Ativa acesso à seção premium. Conteúdo nesta seção passa por moderação humana REFORÇADA, não reduzida. CSAM scan continua obrigatório em todos os uploads.",
   })
   requestAccess(@Request() req: any) {
-    return this.service.requestAccess(req.user.sub);
+    return this.service.requestAccess(req.user.id);
   }
 
   @Delete("revoke")
   @ApiOperation({ summary: "Revoga o próprio Acesso Verificado" })
   revokeOwn(@Request() req: any) {
-    return this.service.revokeAccess(req.user.sub, "Revogado pelo próprio usuário");
+    return this.service.revokeAccess(req.user.id, "Revogado pelo próprio usuário");
   }
 }

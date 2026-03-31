@@ -107,7 +107,7 @@ export default function EarningsPage() {
       <h1 className="text-2xl font-bold text-white">Financeiro</h1>
 
       {/* Cards de saldo */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {[
           {
             label: "Disponível para saque",

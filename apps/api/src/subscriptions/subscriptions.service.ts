@@ -56,7 +56,7 @@ export class SubscriptionsService {
   async getCreatorPlans(creatorId: string) {
     return this.prisma.creatorPlan.findMany({
       where: { creatorId, isActive: true },
-      orderBy: { priceMonthly: "asc" },
+      orderBy: { monthlyPrice: "asc" },
     });
   }
 
@@ -88,7 +88,7 @@ export class SubscriptionsService {
       where: { subscriberId, status: { in: ["ACTIVE", "PAST_DUE"] } },
       include: {
         plan: {
-          select: { name: true, priceMonthly: true, creatorId: true },
+          select: { name: true, monthlyPrice: true, creatorId: true },
         },
       },
       orderBy: { createdAt: "desc" },

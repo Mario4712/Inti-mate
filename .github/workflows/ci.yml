@@ -61,6 +61,13 @@ jobs:
           REDIS_URL: redis://localhost:6379
           JWT_ACCESS_SECRET: test_secret_32_chars_minimum_ok!!
           JWT_REFRESH_SECRET: test_refresh_secret_32_chars_ok!!
+          CPF_ENCRYPTION_KEY: test_cpf_key_32_chars_minimum_ok!
+          ELASTICSEARCH_URL: http://localhost:9200
+          S3_ENDPOINT: http://localhost:9000
+          S3_ACCESS_KEY: minioadmin
+          S3_SECRET_KEY: minioadmin
+          S3_BUCKET_MEDIA: media
+          S3_BUCKET_KYC: kyc-documents
           NODE_ENV: test
         run: pnpm test
 
@@ -84,5 +91,11 @@ jobs:
       - name: Instalar dependências
         run: pnpm install --frozen-lockfile
 
+      - name: Gerar Prisma Client
+        run: pnpm --filter @intimare/database db:generate
+
       - name: Build monorepo
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
         run: pnpm build

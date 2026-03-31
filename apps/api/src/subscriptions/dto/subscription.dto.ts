@@ -25,7 +25,7 @@ export class CreatePlanDto {
   @IsInt()
   @Min(500)   // mínimo R$ 5,00
   @Max(100000) // máximo R$ 1.000,00
-  priceMonthly: number;
+  monthlyPrice: number;
 
   @ApiPropertyOptional({ description: "Preço trimestral em centavos" })
   @IsOptional()

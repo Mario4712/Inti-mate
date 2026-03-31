@@ -299,12 +299,12 @@ export class TournamentsService {
           this.prisma.transaction.create({
             data: {
               userId:      w.creatorId,
-              type:        "TIP", // tipo mais próximo disponível para premiação
+              type:        "TIP",
               grossAmount: prizeCents,
               platformFee: 0,
               netAmount:   prizeCents,
               currency:    "BRL",
-              status:      "COMPLETED",
+              status:      "PAID",
               description: `Prêmio torneio — ${w.rank}º lugar`,
             },
           }),

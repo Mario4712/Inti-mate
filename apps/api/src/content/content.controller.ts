@@ -58,7 +58,7 @@ export class ContentController {
     @Request() req: any,
   ) {
     return this.contentService.uploadMedia(
-      req.user.sub,
+      req.user.id,
       file.buffer,
       file.mimetype,
       visibility,
@@ -89,7 +89,7 @@ export class ContentController {
     @Param("mediaId") mediaId: string,
     @Request() req: any,
   ) {
-    return this.contentService.getMediaItem(mediaId, req.user.sub);
+    return this.contentService.getMediaItem(mediaId, req.user.id);
   }
 
   // ─── Update ───────────────────────────────────────────────
@@ -102,7 +102,7 @@ export class ContentController {
     @Body() dto: UpdateMediaDto,
     @Request() req: any,
   ) {
-    return this.contentService.updateMedia(req.user.sub, mediaId, dto);
+    return this.contentService.updateMedia(req.user.id, mediaId, dto);
   }
 
   // ─── Delete ───────────────────────────────────────────────
@@ -115,6 +115,6 @@ export class ContentController {
     @Param("mediaId") mediaId: string,
     @Request() req: any,
   ) {
-    return this.contentService.deleteMedia(req.user.sub, mediaId);
+    return this.contentService.deleteMedia(req.user.id, mediaId);
   }
 }

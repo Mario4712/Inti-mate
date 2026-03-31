@@ -30,19 +30,19 @@ export class LocationController {
       "Expiração automática em 30 dias. Registra consentimento LGPD.",
   })
   setLocation(@Body() dto: SetLocationDto, @Request() req: any) {
-    return this.service.setLocation(req.user.sub, dto.city, dto.state);
+    return this.service.setLocation(req.user.id, dto.city, dto.state);
   }
 
   @Get("me")
   @ApiOperation({ summary: "Retorna a localização ativa do usuário autenticado" })
   getMyLocation(@Request() req: any) {
-    return this.service.getMyLocation(req.user.sub);
+    return this.service.getMyLocation(req.user.id);
   }
 
   @Delete()
   @ApiOperation({ summary: "Remove localização (opt-out imediato)" })
   removeLocation(@Request() req: any) {
-    return this.service.removeLocation(req.user.sub);
+    return this.service.removeLocation(req.user.id);
   }
 
   @Get("creators-nearby")
@@ -54,6 +54,6 @@ export class LocationController {
     @Request() req: any,
     @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit: number,
   ) {
-    return this.service.getCreatorsNearby(req.user.sub, limit);
+    return this.service.getCreatorsNearby(req.user.id, limit);
   }
 }
