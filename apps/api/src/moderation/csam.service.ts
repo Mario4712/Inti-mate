@@ -91,7 +91,7 @@ export class CsamService {
           "Content-Type": "application/octet-stream",
           "Ocp-Apim-Subscription-Key": apiKey,
         },
-        body: buffer,
+        body: buffer as unknown as BodyInit,
       });
 
       if (!response.ok) {

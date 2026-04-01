@@ -2,6 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 
+// A-Frame custom elements — declare for JSX/TypeScript
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      "a-scene": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & Record<string, any>;
+      "a-assets": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & Record<string, any>;
+      "a-videosphere": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & Record<string, any>;
+      "a-sky": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & Record<string, any>;
+      "a-camera": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & Record<string, any>;
+    }
+  }
+}
+
 /**
  * Item 48 — Player VR/AR com WebXR
  *

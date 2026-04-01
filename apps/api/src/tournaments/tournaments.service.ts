@@ -72,8 +72,8 @@ export class TournamentsService {
         prizePoolBRL: data.prizePoolBRL,
         startsAt:    data.startsAt,
         endsAt:      data.endsAt,
-        rulesJson:   data.rulesJson,
-        prizeDistrib: distrib,
+        rulesJson:   data.rulesJson as unknown as any,
+        prizeDistrib: distrib as unknown as any,
         status:      "UPCOMING",
       },
     });

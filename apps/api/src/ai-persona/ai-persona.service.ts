@@ -53,8 +53,8 @@ export class AiPersonaService {
 
     return this.prisma.aiPersona.upsert({
       where:  { creatorId },
-      create: { creatorId, ...data, faqEntries: faq },
-      update: { ...data, faqEntries: faq },
+      create: { creatorId, ...data, faqEntries: faq as unknown as any },
+      update: { ...data, faqEntries: faq as unknown as any },
     });
   }
 
@@ -84,7 +84,7 @@ export class AiPersonaService {
     }
 
     // Verifica FAQ primeiro (resposta instantânea sem chamar API)
-    const faq = (persona.faqEntries as FaqEntry[]) ?? [];
+    const faq = (persona.faqEntries as unknown as FaqEntry[]) ?? [];
     const matched = faq.find(
       (f) => userMsg.toLowerCase().includes(f.q.toLowerCase()),
     );

@@ -80,7 +80,7 @@ export class EditSuggestionsService {
     }
 
     return this.prisma.editSuggestion.create({
-      data: { fanId, mediaId, type, payload, note: note ?? null },
+      data: { fanId, mediaId, type, payload: payload as unknown as any, note: note ?? null },
     });
   }
 

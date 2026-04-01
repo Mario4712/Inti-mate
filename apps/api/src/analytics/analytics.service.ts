@@ -52,7 +52,7 @@ export class AnalyticsService {
       growthPct:    prev > 0 ? Math.round(((curr - prev) / prev) * 100) : null,
       byType: byType.map((t) => ({
         type:   t.type,
-        amount: Number(t._sum.netAmount ?? 0),
+        amount: Number(t._sum?.netAmount ?? 0),
       })),
     };
   }
