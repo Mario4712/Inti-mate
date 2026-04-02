@@ -8,8 +8,7 @@ import {
 import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../common/database/prisma.service";
 
-// LiveKit SDK — instalado via: pnpm add livekit-server-sdk
-// import { AccessToken, RoomServiceClient } from "livekit-server-sdk";
+import { AccessToken } from "livekit-server-sdk";
 
 const PLATFORM_FEE = 0.20;
 
@@ -84,7 +83,7 @@ export class LivesService {
       },
     });
 
-    const hostToken = this.generateToken(roomName, creatorId, "publisher");
+    const hostToken = await this.generateToken(roomName, creatorId, "publisher");
 
     return { ...live, hostToken };
   }
@@ -120,7 +119,7 @@ export class LivesService {
       },
     });
 
-    const token = this.generateToken(live.livekitRoomName!, viewerId, "subscriber");
+    const token = await this.generateToken(live.livekitRoomName!, viewerId, "subscriber");
     return { token, livekitHost: this.livekitHost };
   }
 
@@ -235,16 +234,23 @@ export class LivesService {
 
   // ─── LiveKit token (stub) ─────────────────────────────────
 
-  private generateToken(
+  private async generateToken(
     roomName: string,
     identity: string,
     role:     "publisher" | "subscriber",
-  ): string {
-    // TODO: descomentar quando livekit-server-sdk estiver instalado
-    // const at = new AccessToken(this.livekitApiKey, this.livekitApiSecret, { identity });
-    // at.addGrant({ roomJoin: true, room: roomName, canPublish: role === "publisher", canSubscribe: true });
-    // return at.toJwt();
-    this.logger.debug(`[mock] LiveKit token para ${identity} na sala ${roomName} como ${role}`);
-    return `mock-token-${identity}-${roomName}-${role}`;
+  ): Promise<string> {
+    if (!this.livekitApiKey || this.livekitApiKey === "devkey") {
+      this.logger.warn(`[mock] LiveKit token para ${identity} na sala ${roomName} como ${role}`);
+      return `mock-token-${identity}-${roomName}-${role}`;
+    }
+
+    const at = new AccessToken(this.livekitApiKey, this.livekitApiSecret, { identity });
+    at.addGrant({
+      roomJoin: true,
+      room: roomName,
+      canPublish: role === "publisher",
+      canSubscribe: true,
+    });
+    return await at.toJwt();
   }
 }
