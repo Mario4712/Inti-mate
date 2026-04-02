@@ -41,6 +41,7 @@ api.interceptors.response.use(
       } catch {
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
+        document.cookie = "has_session=; path=/; max-age=0";
         if (typeof window !== "undefined") {
           window.location.href = "/login";
         }

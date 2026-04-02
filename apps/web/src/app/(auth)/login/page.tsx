@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2, Eye, EyeOff } from "lucide-react";
-import { authApi } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
 
 const schema = z.object({
   email: z.string().email("E-mail inválido"),
@@ -16,6 +17,19 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
+  const { login } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect") ?? "/dashboard";
+
   const [showPassword, setShowPassword] = useState(false);
   const [requires2fa, setRequires2fa] = useState(false);
   const [serverError, setServerError] = useState("");
@@ -29,16 +43,17 @@ export default function LoginPage() {
   async function onSubmit(values: FormValues) {
     setServerError("");
     try {
-      const { data } = await authApi.login(values);
+      const result = await login(values.email, values.password, values.totpCode);
 
-      if (data.requiresTwoFactor) {
+      if (result.requiresTwoFactor) {
         setRequires2fa(true);
         return;
       }
 
-      localStorage.setItem("access_token", data.accessToken);
-      localStorage.setItem("refresh_token", data.refreshToken);
-      window.location.href = "/dashboard";
+      // Set session flag cookie for middleware (httpOnly: false, same-site)
+      document.cookie = "has_session=1; path=/; max-age=604800; samesite=lax";
+
+      router.push(redirect);
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? "Credenciais inválidas";
       setServerError(Array.isArray(msg) ? msg.join(", ") : msg);
