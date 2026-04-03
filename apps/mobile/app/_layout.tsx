@@ -43,6 +43,10 @@ export default function RootLayout() {
           >
             <Stack.Screen name="(auth)"  options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)"  options={{ headerShown: false }} />
+            <Stack.Screen name="creator/[id]" options={{ title: "Perfil" }} />
+            <Stack.Screen name="media/[id]"   options={{ title: "Conteudo" }} />
+            <Stack.Screen name="live/[id]"    options={{ title: "Ao Vivo" }} />
+            <Stack.Screen name="notifications" options={{ title: "Notificacoes" }} />
             <Stack.Screen name="+not-found" />
           </Stack>
         </QueryClientProvider>

@@ -196,12 +196,123 @@ export class SchedulerService {
     platform: string;
     caption: string;
     mediaUrl: string | null;
+    creatorId?: string;
   }): Promise<string> {
-    // TODO: integrar com Graph API (Instagram), Twitter API v2, TikTok Content API
-    // Cada uma requer OAuth2 por criador (tokens armazenados criptografados)
-    this.logger.debug(`[mock] Publicando no ${post.platform}: ${post.caption.slice(0, 50)}…`);
+    switch (post.platform) {
+      case "INSTAGRAM":
+        return this.publishToInstagram(post);
+      case "TWITTER_X":
+        return this.publishToTwitter(post);
+      case "TIKTOK":
+        return this.publishToTikTok(post);
+      default:
+        throw new Error(`Plataforma ${post.platform} não suportada`);
+    }
+  }
 
-    // Retorna ID externo simulado
-    return `mock-${post.platform.toLowerCase()}-${post.id}-${Date.now()}`;
+  /**
+   * Instagram Graph API — Container-based publishing
+   * Requires: page access token with instagram_content_publish permission
+   */
+  private async publishToInstagram(post: { caption: string; mediaUrl: string | null }): Promise<string> {
+    const accessToken = this.config.get("app.social.instagram.accessToken");
+    const igUserId = this.config.get("app.social.instagram.userId");
+
+    if (!accessToken || !igUserId) {
+      this.logger.warn("[MOCK] Instagram: tokens não configurados");
+      return `mock-instagram-${Date.now()}`;
+    }
+
+    // Step 1: Create media container
+    const containerParams = new URLSearchParams({
+      caption: post.caption,
+      access_token: accessToken,
+    });
+    if (post.mediaUrl) containerParams.set("image_url", post.mediaUrl);
+
+    const containerRes = await fetch(
+      `https://graph.facebook.com/v19.0/${igUserId}/media?${containerParams}`,
+      { method: "POST" },
+    );
+    const container: any = await containerRes.json();
+    if (container.error) throw new Error(`Instagram: ${container.error.message}`);
+
+    // Step 2: Publish container
+    const publishRes = await fetch(
+      `https://graph.facebook.com/v19.0/${igUserId}/media_publish?creation_id=${container.id}&access_token=${accessToken}`,
+      { method: "POST" },
+    );
+    const published: any = await publishRes.json();
+    if (published.error) throw new Error(`Instagram publish: ${published.error.message}`);
+
+    return published.id;
+  }
+
+  /**
+   * Twitter/X API v2 — Tweet creation
+   * Requires: OAuth 2.0 Bearer Token with tweet.write scope
+   */
+  private async publishToTwitter(post: { caption: string; mediaUrl: string | null }): Promise<string> {
+    const bearerToken = this.config.get("app.social.twitter.bearerToken");
+
+    if (!bearerToken) {
+      this.logger.warn("[MOCK] Twitter/X: token não configurado");
+      return `mock-twitter-${Date.now()}`;
+    }
+
+    const body: any = { text: post.caption };
+
+    const res = await fetch("https://api.twitter.com/2/tweets", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${bearerToken}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data: any = await res.json();
+    if (data.errors) throw new Error(`Twitter: ${data.errors[0]?.message ?? "Erro desconhecido"}`);
+
+    return data.data?.id ?? `twitter-${Date.now()}`;
+  }
+
+  /**
+   * TikTok Content Posting API v2
+   * Requires: access_token with video.upload scope
+   */
+  private async publishToTikTok(post: { caption: string; mediaUrl: string | null }): Promise<string> {
+    const accessToken = this.config.get("app.social.tiktok.accessToken");
+
+    if (!accessToken) {
+      this.logger.warn("[MOCK] TikTok: token não configurado");
+      return `mock-tiktok-${Date.now()}`;
+    }
+
+    // TikTok Direct Post API (for photo/video content)
+    const res = await fetch("https://open.tiktokapis.com/v2/post/publish/content/init/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        post_info: {
+          title: post.caption.slice(0, 150),
+          privacy_level: "SELF_ONLY", // creator changes later
+        },
+        source_info: {
+          source: "PULL_FROM_URL",
+          video_url: post.mediaUrl,
+        },
+      }),
+    });
+
+    const data: any = await res.json();
+    if (data.error?.code !== "ok" && data.error) {
+      throw new Error(`TikTok: ${data.error.message ?? "Erro desconhecido"}`);
+    }
+
+    return data.data?.publish_id ?? `tiktok-${Date.now()}`;
   }
 }

@@ -3,8 +3,13 @@ import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../common/database/prisma.service";
 import { UpdatePreferencesDto, RegisterPushDto } from "./dto/notifications.dto";
 
-// Web Push via web-push library (instalado separadamente)
-// import * as webPush from "web-push";
+// web-push is optional — loaded dynamically
+let webPush: any;
+try {
+  webPush = require("web-push");
+} catch {
+  // web-push not installed
+}
 
 const MAX_PUSH_PER_DAY = 5;
 
@@ -174,12 +179,13 @@ export class NotificationsService {
 
     for (const sub of subscriptions) {
       try {
-        // TODO: descomentar quando web-push for instalado
-        // await webPush.sendNotification(
-        //   { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-        //   JSON.stringify({ title: payload.title, body: payload.body, url: payload.url, id: notificationId }),
-        //   { vapidDetails: { subject: "mailto:support@inti.mate", publicKey: this.vapidPublicKey, privateKey: this.vapidPrivateKey } },
-        // );
+        if (this.vapidPublicKey && this.vapidPrivateKey) {
+          await webPush.sendNotification(
+            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+            JSON.stringify({ title: payload.title, body: payload.body, url: payload.url, id: notificationId }),
+            { vapidDetails: { subject: "mailto:support@inti.mate", publicKey: this.vapidPublicKey, privateKey: this.vapidPrivateKey } },
+          );
+        }
         this.logger.debug(`Web push enviado para endpoint ${sub.endpoint.slice(0, 30)}...`);
       } catch (err: any) {
         if (err.statusCode === 410) {

@@ -37,6 +37,7 @@ import { EditSuggestionsModule } from "./edit-suggestions/edit-suggestions.modul
 import { VrContentModule } from "./vr-content/vr-content.module";
 import { DatabaseModule } from "./common/database/database.module";
 import { RedisModule } from "./common/redis/redis.module";
+import { SentryModule } from "./common/sentry/sentry.module";
 import appConfig from "./config/app.config";
 
 @Module({
@@ -66,6 +67,7 @@ import appConfig from "./config/app.config";
     ScheduleModule.forRoot(),
     DatabaseModule,
     RedisModule,
+    SentryModule,
     AuthModule,
     UsersModule,
     ModerationModule,

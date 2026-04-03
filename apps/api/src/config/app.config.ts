@@ -44,11 +44,6 @@ export default registerAs("app", () => ({
     unicoClientSecret: process.env.UNICO_CLIENT_SECRET,
   },
 
-  csam: {
-    provider: process.env.CSAM_PROVIDER ?? "local",
-    photoDnaApiKey: process.env.PHOTODNA_API_KEY,
-  },
-
   totp: {
     appName: process.env.TOTP_APP_NAME ?? "Inti.mate",
   },
@@ -74,10 +69,52 @@ export default registerAs("app", () => ({
     apiSecret: process.env.LIVEKIT_API_SECRET ?? "devsecret",
   },
 
-  pagarme: { apiKey: process.env.PAGARME_API_KEY },
+  pagarme: {
+    apiKey: process.env.PAGARME_API_KEY,
+    webhookSecret: process.env.PAGARME_WEBHOOK_SECRET,
+  },
   stripe: {
     secretKey: process.env.STRIPE_SECRET_KEY,
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+  },
+
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  },
+
+  social: {
+    instagram: {
+      accessToken: process.env.INSTAGRAM_ACCESS_TOKEN,
+      userId: process.env.INSTAGRAM_USER_ID,
+    },
+    twitter: {
+      bearerToken: process.env.TWITTER_BEARER_TOKEN,
+    },
+    tiktok: {
+      accessToken: process.env.TIKTOK_ACCESS_TOKEN,
+    },
+  },
+
+  support: {
+    email: process.env.SUPPORT_EMAIL ?? "suporte@inti.mate",
+  },
+
+  sentry: {
+    dsn: process.env.SENTRY_DSN,
+  },
+
+  csam: {
+    provider: process.env.CSAM_PROVIDER ?? "local",
+    photoDnaApiKey: process.env.PHOTODNA_API_KEY,
+    ncmec: {
+      username: process.env.NCMEC_USERNAME,
+      password: process.env.NCMEC_PASSWORD,
+      endpoint: process.env.NCMEC_ENDPOINT,
+    },
+    safernet: {
+      endpoint: process.env.SAFERNET_ENDPOINT,
+    },
   },
 
   frontendUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",

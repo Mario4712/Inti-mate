@@ -3,9 +3,25 @@
 import { useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
 
+// LiveKit imports — components-react fornece player pronto
+let LiveKitRoom: any = null;
+let VideoConference: any = null;
+let RoomAudioRenderer: any = null;
+
+try {
+  const lk = require("@livekit/components-react");
+  LiveKitRoom = lk.LiveKitRoom;
+  VideoConference = lk.VideoConference;
+  RoomAudioRenderer = lk.RoomAudioRenderer;
+} catch {
+  // @livekit/components-react não instalado — usa fallback
+}
+
 interface LivePlayerProps {
   liveId:    string;
   creatorName: string;
+  token?:    string;
+  serverUrl?: string;
 }
 
 interface SuperChat {
@@ -18,15 +34,26 @@ interface SuperChat {
   createdAt:   string;
 }
 
-// Nota: integração real com @livekit/components-react será adicionada
-// após instalação do SDK. Este componente é o shell com UX pronto.
-
-export function LivePlayer({ liveId, creatorName }: LivePlayerProps) {
+export function LivePlayer({ liveId, creatorName, token: initialToken, serverUrl }: LivePlayerProps) {
   const [superChats, setSuperChats] = useState<SuperChat[]>([]);
   const [message,    setMessage]    = useState("");
   const [amount,     setAmount]     = useState(500); // centavos default R$5
   const [sending,    setSending]    = useState(false);
+  const [lkToken,    setLkToken]    = useState(initialToken ?? "");
+  const [lkUrl,      setLkUrl]      = useState(serverUrl ?? "");
   const chatRef = useRef<HTMLDivElement>(null);
+
+  // Busca token LiveKit se não fornecido
+  useEffect(() => {
+    if (!lkToken) {
+      api.post(`/lives/${liveId}/join`)
+        .then((res) => {
+          setLkToken(res.data.token);
+          setLkUrl(res.data.url ?? process.env.NEXT_PUBLIC_LIVEKIT_HOST ?? "ws://localhost:7880");
+        })
+        .catch(() => {});
+    }
+  }, [liveId, lkToken]);
 
   useEffect(() => {
     // Busca super chats ao carregar
@@ -68,12 +95,25 @@ export function LivePlayer({ liveId, creatorName }: LivePlayerProps) {
     <div className="flex h-[100dvh] flex-col bg-gray-950 lg:flex-row">
       {/* Player de vídeo (LiveKit embed) */}
       <div className="relative flex-1 bg-black">
-        <div className="flex h-full items-center justify-center">
-          <p className="text-gray-500 text-sm">
-            {/* TODO: substituir por <LiveKitRoom /> do @livekit/components-react */}
-            Player ao vivo de {creatorName}
-          </p>
-        </div>
+        {LiveKitRoom && lkToken && lkUrl ? (
+          <LiveKitRoom
+            serverUrl={lkUrl}
+            token={lkToken}
+            connect={true}
+            video={false}
+            audio={true}
+            style={{ height: "100%" }}
+          >
+            <VideoConference />
+            <RoomAudioRenderer />
+          </LiveKitRoom>
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            <p className="text-gray-500 text-sm">
+              {lkToken ? "Conectando ao stream..." : `Player ao vivo de ${creatorName}`}
+            </p>
+          </div>
+        )}
 
         {/* Super Chats pinados sobrepostos */}
         {pinned.length > 0 && (

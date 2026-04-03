@@ -139,18 +139,89 @@ export class CsamService {
   }
 
   private async notifyAuthorities(logId: string, contentId: string, hash: string) {
-    // TODO (produção): integrar com NCMEC CyberTipline API
-    // e Ministério Público Federal (canal de denúncias CSAM)
     this.logger.warn(
-      `[AUTORIDADES] Reporte pendente — LogId: ${logId}, ContentId: ${contentId}`,
+      `[AUTORIDADES] Reportando CSAM — LogId: ${logId}, ContentId: ${contentId}`,
     );
 
-    // Atualiza o log como "em processo de reporte"
+    let reportReference = `PENDING-${logId}`;
+
+    // NCMEC CyberTipline API (produção)
+    const ncmecApiUser = this.config.get("app.csam.ncmec.username");
+    const ncmecApiPass = this.config.get("app.csam.ncmec.password");
+    const ncmecEndpoint = this.config.get("app.csam.ncmec.endpoint") ??
+      "https://report.cybertipline.org/ispws/submit";
+
+    if (ncmecApiUser && ncmecApiPass && process.env.NODE_ENV === "production") {
+      try {
+        const reportPayload = {
+          incidentSummary: {
+            incidentType: "Child Pornography (possession, manufacture, and distribution)",
+            incidentDateTime: new Date().toISOString(),
+          },
+          internetDetails: {
+            webPageIncident: {
+              url: `https://inti.mate/content/${contentId}`,
+              sha256Hash: hash,
+            },
+          },
+          reporter: {
+            reportingEsp: {
+              espName: "Inti.mate",
+              espContactInfo: "legal@inti.mate",
+            },
+          },
+        };
+
+        const response = await fetch(ncmecEndpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Basic ${Buffer.from(`${ncmecApiUser}:${ncmecApiPass}`).toString("base64")}`,
+          },
+          body: JSON.stringify(reportPayload),
+        });
+
+        if (response.ok) {
+          const data: any = await response.json();
+          reportReference = `NCMEC-${data.reportId ?? response.status}`;
+          this.logger.warn(`NCMEC CyberTipline report enviado: ${reportReference}`);
+        } else {
+          this.logger.error(`NCMEC CyberTipline falhou (${response.status}): ${await response.text()}`);
+          reportReference = `NCMEC-FAILED-${logId}`;
+        }
+      } catch (err) {
+        this.logger.error("Erro ao reportar NCMEC:", err);
+        reportReference = `NCMEC-ERROR-${logId}`;
+      }
+    }
+
+    // SaferNet Brasil — canal de denúncia CSAM
+    const safernetEndpoint = this.config.get("app.csam.safernet.endpoint");
+    if (safernetEndpoint && process.env.NODE_ENV === "production") {
+      try {
+        await fetch(safernetEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            platform: "inti.mate",
+            contentId,
+            hash,
+            reportedAt: new Date().toISOString(),
+            ncmecRef: reportReference,
+          }),
+        });
+        this.logger.warn(`SaferNet Brasil report enviado para content ${contentId}`);
+      } catch (err) {
+        this.logger.error("Erro ao reportar SaferNet:", err);
+      }
+    }
+
+    // Atualiza o log com referência do reporte
     await this.prisma.moderationLog.update({
       where: { id: logId },
       data: {
         reportedToAuthority: true,
-        reportReference: `PENDING-${logId}`,
+        reportReference,
       },
     });
   }

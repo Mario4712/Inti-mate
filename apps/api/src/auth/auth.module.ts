@@ -8,6 +8,7 @@ import { EmailService } from "./email.service";
 import { TwoFactorService } from "./two-factor.service";
 import { JwtStrategy } from "./strategies/jwt.strategy";
 import { LocalStrategy } from "./strategies/local.strategy";
+import { GoogleStrategy } from "./strategies/google.strategy";
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { LocalStrategy } from "./strategies/local.strategy";
     TwoFactorService,
     JwtStrategy,
     LocalStrategy,
+    GoogleStrategy,
   ],
   exports: [AuthService, JwtModule],
 })

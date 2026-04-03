@@ -8,6 +8,7 @@ import {
 } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { PrismaService } from "../common/database/prisma.service";
+import { PagarmeStrategy } from "../payments/strategies/pagarme.strategy";
 
 const L1_RATE         = 0.20;   // 20% nível 1
 const L2_RATE         = 0.05;   // 5%  nível 2
@@ -17,7 +18,10 @@ const CAP_MONTHLY_BRL = 5000;   // R$ 5.000 por mês
 export class AffiliatesService {
   private readonly logger = new Logger(AffiliatesService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private pagarme: PagarmeStrategy,
+  ) {}
 
   // ─── Cadastrar como afiliado ──────────────────────────────
 
@@ -215,8 +219,32 @@ export class AffiliatesService {
               paidBRL:    { increment: batch.total },
             },
           }),
-          // TODO: disparar PIX via withdrawals gateway
         ]);
+
+        // Dispara transferência PIX para o afiliado
+        try {
+          const affiliate = await this.prisma.affiliate.findUnique({
+            where: { id: affiliateId },
+          });
+          if (affiliate) {
+            const user = await this.prisma.user.findUnique({
+              where: { id: affiliate.userId },
+              select: { email: true },
+            });
+            if (user?.email) {
+              await this.pagarme.createPixTransfer({
+                amountCents: Math.round(batch.total * 100),
+                pixKey: user.email,
+                pixKeyType: "email",
+                description: `Comissão afiliado Inti.mate`,
+                metadata: { affiliateId },
+              });
+            }
+          }
+        } catch (pixErr) {
+          this.logger.error(`Falha PIX afiliado ${affiliateId}:`, pixErr);
+        }
+
         this.logger.log(`Comissão paga: afiliado ${affiliateId} R$ ${batch.total.toFixed(2)}`);
       } catch (err) {
         this.logger.error(`Falha ao pagar afiliado ${affiliateId}:`, err);

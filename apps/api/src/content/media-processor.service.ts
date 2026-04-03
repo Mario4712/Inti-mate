@@ -4,6 +4,13 @@ import { promisify } from "util";
 import * as path from "path";
 import * as fs from "fs/promises";
 import * as os from "os";
+// sharp is an optional dependency — use dynamic require
+let sharp: any;
+try {
+  sharp = require("sharp");
+} catch {
+  // sharp not installed — processImage returns originals
+}
 
 const execFileAsync = promisify(execFile);
 
@@ -27,15 +34,33 @@ export class MediaProcessorService {
   // ─── Imagem ──────────────────────────────────────────────
 
   async processImage(input: Buffer, mimeType: string): Promise<ProcessedImage> {
-    // Em produção: usar sharp para redimensionar e otimizar
-    // Aqui retornamos o buffer original (sharp não está no package.json base)
-    // para não bloquear o desenvolvimento — adicionar sharp na Fase de produção
     this.logger.debug(`Processando imagem (${(input.length / 1024).toFixed(1)} KB)`);
+
+    if (!sharp) {
+      this.logger.warn("sharp nao instalado — retornando imagem original");
+      return { optimized: input, thumbnail: input, width: 0, height: 0 };
+    }
+
+    const image = sharp(input);
+    const metadata = await image.metadata();
+
+    // Otimiza imagem original (max 1920px no maior lado, qualidade 85)
+    const optimized = await sharp(input)
+      .resize(1920, 1920, { fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: 85, mozjpeg: true })
+      .toBuffer();
+
+    // Gera thumbnail 300x300 (crop center)
+    const thumbnail = await sharp(input)
+      .resize(300, 300, { fit: "cover", position: "centre" })
+      .jpeg({ quality: 75 })
+      .toBuffer();
+
     return {
-      optimized: input,
-      thumbnail: input,   // TODO: gerar thumbnail 300x300 com sharp
-      width:     0,
-      height:    0,
+      optimized,
+      thumbnail,
+      width:  metadata.width  ?? 0,
+      height: metadata.height ?? 0,
     };
   }
 

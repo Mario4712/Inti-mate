@@ -106,12 +106,14 @@ export class SupportService {
   }
 
   private async createTicket(userId: string, message: string) {
-    // Persiste no log de moderação (reutilizando a tabela, pode-se criar SupportTicket depois)
     this.logger.log(`Ticket de suporte criado para usuário ${userId}: ${message.slice(0, 100)}`);
 
-    // TODO: Bloco 7 — integração com Zendesk / Freshdesk / e-mail interno
-    // Por ora, apenas loga e cria um registro de ModerationLog com type SUPPORT_TICKET
-    await this.prisma.moderationLog.create({
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, username: true },
+    });
+
+    const log = await this.prisma.moderationLog.create({
       data: {
         contentId:   userId,
         contentType: "SUPPORT_TICKET",
@@ -119,5 +121,68 @@ export class SupportService {
         reason:      message.slice(0, 500),
       },
     });
+
+    // Envia email de escalação para a equipe de suporte
+    await this.sendEscalationEmail({
+      ticketId: log.id,
+      userId,
+      userEmail: user?.email ?? "desconhecido",
+      username: user?.username ?? "desconhecido",
+      message: message.slice(0, 2000),
+    });
+
+    return log;
+  }
+
+  private async sendEscalationEmail(params: {
+    ticketId: string;
+    userId: string;
+    userEmail: string;
+    username: string;
+    message: string;
+  }) {
+    const supportEmail = this.config.get("app.support.email") ?? "suporte@inti.mate";
+    const smtpHost = this.config.get("app.smtp.host");
+
+    if (!smtpHost) {
+      this.logger.debug("[DEV] Email de escalação não enviado (SMTP não configurado)");
+      return;
+    }
+
+    try {
+      // Usa nodemailer via fetch para SMTP (ou integra com EmailService existente)
+      const nodemailer = await import("nodemailer");
+      const transporter = nodemailer.createTransport({
+        host: this.config.get("app.smtp.host"),
+        port: parseInt(this.config.get("app.smtp.port") ?? "587"),
+        auth: {
+          user: this.config.get("app.smtp.user") ?? "",
+          pass: this.config.get("app.smtp.pass") ?? "",
+        },
+      });
+
+      await transporter.sendMail({
+        from: this.config.get("app.smtp.from") ?? "noreply@inti.mate",
+        to: supportEmail,
+        subject: `[Suporte] Ticket #${params.ticketId.slice(0, 8)} — ${params.username}`,
+        text: [
+          `Novo ticket de suporte escalado`,
+          ``,
+          `Ticket ID: ${params.ticketId}`,
+          `Usuário: ${params.username} (${params.userEmail})`,
+          `User ID: ${params.userId}`,
+          ``,
+          `Mensagem:`,
+          params.message,
+          ``,
+          `---`,
+          `Painel admin: ${this.config.get("NEXT_PUBLIC_APP_URL") ?? "https://inti.mate"}/admin/tickets/${params.ticketId}`,
+        ].join("\n"),
+      });
+
+      this.logger.log(`Email de escalação enviado para ${supportEmail} — ticket ${params.ticketId}`);
+    } catch (err) {
+      this.logger.error("Falha ao enviar email de escalação:", err);
+    }
   }
 }

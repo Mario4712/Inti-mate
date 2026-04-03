@@ -8,6 +8,8 @@ import { Cron, CronExpression } from "@nestjs/schedule";
 import { Logger } from "@nestjs/common";
 import { PrismaService } from "../common/database/prisma.service";
 import { StorageService } from "../content/storage.service";
+import { PagarmeStrategy } from "../payments/strategies/pagarme.strategy";
+import { TransactionType } from "@intimare/database";
 
 const PLATFORM_FEE   = 0.20;
 const MIN_BID_STEP   = 100; // centavos (R$ 1,00 mínimo por lance acima do atual)
@@ -19,6 +21,7 @@ export class AuctionsService {
   constructor(
     private prisma:   PrismaService,
     private storage:  StorageService,
+    private pagarme:  PagarmeStrategy,
   ) {}
 
   // ─── Criar leilão ─────────────────────────────────────────
@@ -130,14 +133,41 @@ export class AuctionsService {
 
           if (!auction.winnerId) return; // sem lances, cancela
 
-          // Cobrar vencedor (TODO: integrar com payments gateway)
-          const netCents = Math.round(auction.currentBid * (1 - PLATFORM_FEE));
+          // Cobra o vencedor via gateway de pagamento
+          const grossCents = auction.currentBid;
+          const platformFee = Math.round(grossCents * PLATFORM_FEE);
+          const netCents = grossCents - platformFee;
 
-          await tx.creatorBalance.upsert({
-            where:  { creatorId: auction.creatorId },
-            create: { creatorId: auction.creatorId, availableAmount: netCents, pendingAmount: 0, totalEarned: netCents },
-            update: { availableAmount: { increment: netCents }, totalEarned: { increment: netCents } },
+          // Gera cobrança PIX para o vencedor
+          const charge = await this.pagarme.createPixCharge(
+            grossCents,
+            `Leilão: ${auction.title} — Inti.mate`,
+          );
+
+          // Registra transação
+          await tx.transaction.create({
+            data: {
+              userId: auction.winnerId,
+              creatorId: auction.creatorId,
+              type: "TIP" as TransactionType, // reusa tipo TIP para leilões
+              status: charge.txId.startsWith("mock_") ? "PAID" : "PENDING",
+              grossAmount: grossCents,
+              platformFee,
+              netAmount: netCents,
+              description: `Leilão: ${auction.title}`,
+              gatewayProvider: "pagarme",
+              gatewayTxId: charge.txId,
+            },
           });
+
+          // Credita criador se mock (em produção, credita via webhook)
+          if (charge.txId.startsWith("mock_")) {
+            await tx.creatorBalance.upsert({
+              where:  { creatorId: auction.creatorId },
+              create: { creatorId: auction.creatorId, availableAmount: netCents, pendingAmount: 0, totalEarned: netCents },
+              update: { availableAmount: { increment: netCents }, totalEarned: { increment: netCents } },
+            });
+          }
 
           await tx.auction.update({
             where: { id: auction.id },

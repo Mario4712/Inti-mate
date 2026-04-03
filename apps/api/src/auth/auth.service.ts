@@ -347,6 +347,152 @@ export class AuthService {
     return { message: "2FA desabilitado" };
   }
 
+  // ─── Forgot / Reset Password ──────────────────────────────
+
+  async forgotPassword(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
+    // Always return success to prevent email enumeration
+    if (!user) return { message: "Se o e-mail estiver cadastrado, enviaremos as instrucoes." };
+
+    // Invalidate previous tokens
+    await this.prisma.emailVerificationToken.updateMany({
+      where: { userId: user.id, type: "password_reset", usedAt: null },
+      data: { usedAt: new Date() },
+    });
+
+    const token = uuidv4();
+    await this.prisma.emailVerificationToken.create({
+      data: {
+        userId: user.id,
+        token,
+        type: "password_reset",
+        expiresAt: addMinutes(new Date(), 60),
+      },
+    });
+
+    await this.emailService.sendPasswordReset(user.email, token);
+
+    return { message: "Se o e-mail estiver cadastrado, enviaremos as instrucoes." };
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    const record = await this.prisma.emailVerificationToken.findUnique({
+      where: { token },
+    });
+
+    if (!record || record.usedAt || record.expiresAt < new Date() || record.type !== "password_reset") {
+      throw new BadRequestException("Token invalido ou expirado");
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, this.BCRYPT_ROUNDS);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: record.userId },
+        data: { passwordHash },
+      }),
+      this.prisma.emailVerificationToken.update({
+        where: { id: record.id },
+        data: { usedAt: new Date() },
+      }),
+    ]);
+
+    return { message: "Senha redefinida com sucesso" };
+  }
+
+  // ─── Social Login ─────────────────────────────────────────
+
+  async loginOrRegisterSocial(
+    provider: string,
+    providerId: string,
+    email: string,
+    name: string,
+    picture: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    const normalizedEmail = email.toLowerCase();
+
+    // Busca usuario existente pelo email
+    let user = await this.prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      include: { profile: true },
+    });
+
+    if (user) {
+      // Ja existe — faz login direto (social login pula 2FA e email verification)
+      if (user.status === "SUSPENDED" || user.status === "BANNED") {
+        throw new UnauthorizedException("Conta suspensa ou banida");
+      }
+
+      // Atualiza status se pendente
+      if (user.status === "PENDING_EMAIL") {
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { emailVerified: true, status: "ACTIVE" },
+        });
+      }
+    } else {
+      // Novo usuario — registra automaticamente
+      user = await this.prisma.$transaction(async (tx) => {
+        const username = await this.generateUsername(normalizedEmail, tx);
+        const newUser = await tx.user.create({
+          data: {
+            email: normalizedEmail,
+            username,
+            passwordHash: "", // sem senha — social login only
+            role: "CONSUMER",
+            status: "ACTIVE",
+            emailVerified: true,
+          },
+        });
+
+        await tx.userProfile.create({
+          data: {
+            userId: newUser.id,
+            artisticName: name,
+            avatarUrl: picture || null,
+          },
+        });
+
+        // Registra consentimentos obrigatorios
+        const consentTypes = ["TERMS_OF_SERVICE", "PRIVACY_POLICY", "AGE_VERIFICATION"] as const;
+        for (const type of consentTypes) {
+          await tx.consentRecord.create({
+            data: {
+              userId: newUser.id,
+              type,
+              version: "1.0",
+              accepted: true,
+              ipAddress: ipAddress ?? null,
+            },
+          });
+        }
+
+        return tx.user.findUnique({
+          where: { id: newUser.id },
+          include: { profile: true },
+        });
+      }) as any;
+    }
+
+    const tokens = await this.generateTokens(user!.id, user!.role, ipAddress, userAgent);
+
+    return {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      user: {
+        id: user!.id,
+        email: user!.email,
+        username: user!.username,
+        role: user!.role,
+      },
+    };
+  }
+
   // ─── Helpers privados ────────────────────────────────────
 
   private async generateTokens(

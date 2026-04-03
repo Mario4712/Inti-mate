@@ -1,14 +1,17 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import * as crypto from "crypto";
 import type { ChargeInput, ChargeResult, WebhookEvent } from "./pagarme.strategy";
 
 @Injectable()
 export class StripeStrategy {
   private readonly logger = new Logger(StripeStrategy.name);
   private readonly secretKey: string;
+  private readonly webhookSecret: string;
 
   constructor(private config: ConfigService) {
     this.secretKey = this.config.get("app.stripe.secretKey") ?? "";
+    this.webhookSecret = this.config.get("app.stripe.webhookSecret") ?? "";
   }
 
   async charge(input: ChargeInput): Promise<ChargeResult> {
@@ -46,7 +49,11 @@ export class StripeStrategy {
   }
 
   async parseWebhook(payload: any, signature: string): Promise<WebhookEvent> {
-    // TODO produção: verificar assinatura com stripe.webhooks.constructEvent
+    // Valida assinatura Stripe Webhook (Stripe-Signature header format: t=...,v1=...)
+    if (this.webhookSecret && process.env.NODE_ENV === "production") {
+      this.verifyStripeSignature(payload, signature);
+    }
+
     const typeMap: Record<string, WebhookEvent["type"]> = {
       "payment_intent.succeeded": "payment.paid",
       "payment_intent.payment_failed": "payment.failed",
@@ -60,5 +67,41 @@ export class StripeStrategy {
       reason: payload.data?.object?.last_payment_error?.message,
       raw: payload,
     };
+  }
+
+  private verifyStripeSignature(payload: any, signatureHeader: string) {
+    if (!signatureHeader) {
+      throw new UnauthorizedException("Stripe webhook: header de assinatura ausente");
+    }
+
+    const body = typeof payload === "string" ? payload : JSON.stringify(payload);
+
+    // Parse Stripe-Signature: t=timestamp,v1=signature
+    const elements = signatureHeader.split(",").reduce((acc: Record<string, string>, item) => {
+      const [key, value] = item.split("=");
+      if (key && value) acc[key.trim()] = value.trim();
+      return acc;
+    }, {});
+
+    const timestamp = elements["t"];
+    const v1 = elements["v1"];
+
+    if (!timestamp || !v1) {
+      throw new UnauthorizedException("Stripe webhook: formato de assinatura inválido");
+    }
+
+    // Reject timestamps older than 5 minutes (replay protection)
+    const tolerance = 300;
+    const now = Math.floor(Date.now() / 1000);
+    if (Math.abs(now - parseInt(timestamp, 10)) > tolerance) {
+      throw new UnauthorizedException("Stripe webhook: timestamp fora da tolerância");
+    }
+
+    const signedPayload = `${timestamp}.${body}`;
+    const expected = crypto.createHmac("sha256", this.webhookSecret).update(signedPayload).digest("hex");
+
+    if (!crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1))) {
+      throw new UnauthorizedException("Stripe webhook: assinatura inválida");
+    }
   }
 }

@@ -2,17 +2,24 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { PrismaService } from "../common/database/prisma.service";
+import { NotificationsService } from "../notifications/notifications.service";
 
 const REFERRAL_CREDIT_BRL = 15;   // R$ por indicação convertida
 const WIN_BACK_INACTIVE_DAYS = 30; // dias sem assinatura para win-back
 
 @Injectable()
 export class ReferralsService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(ReferralsService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+  ) {}
 
   // ─── Item 29: Programa de Referência ─────────────────────
 
@@ -188,10 +195,19 @@ export class ReferralsService {
       take: 100,
     });
 
-    // TODO: disparar notificação/email de win-back com cupom de desconto
-    // Por ora apenas loga — integrar com NotificationsService no Bloco 6
     for (const l of lapsed) {
-      // await this.notifications.send({ userId: l.subscriberId, type: "WIN_BACK", ... })
+      try {
+        await this.notifications.send({
+          userId: l.subscriberId,
+          type: "SYSTEM",
+          title: "Sentimos sua falta!",
+          body: "Volte e aproveite um desconto especial de 20% na sua próxima assinatura. Use o código VOLTEI20 no checkout.",
+          link: `/creator/${l.creatorId}`,
+        });
+        this.logger.debug(`Win-back enviado para ${l.subscriberId}`);
+      } catch (err) {
+        this.logger.error(`Falha win-back ${l.subscriberId}:`, err);
+      }
     }
   }
 

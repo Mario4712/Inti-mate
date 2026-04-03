@@ -18,6 +18,7 @@ import {
 } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service";
+import { GoogleStrategy } from "./strategies/google.strategy";
 import {
   ForgotPasswordDto,
   LoginDto,
@@ -33,7 +34,10 @@ import { CurrentUser } from "./decorators/current-user.decorator";
 @ApiTags("Auth")
 @Controller({ path: "auth", version: "1" })
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private googleStrategy: GoogleStrategy,
+  ) {}
 
   // ─── Registro ────────────────────────────────────────────
 
@@ -137,6 +141,49 @@ export class AuthController {
     @Body() dto: VerifyTotpDto,
   ) {
     return this.authService.disableTwoFactor(user.id, dto.code);
+  }
+
+  // ─── Forgot / Reset password ──────────────────────────────
+
+  @Post("forgot-password")
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ auth: { limit: 3, ttl: 60_000 } })
+  @ApiOperation({ summary: "Solicitar reset de senha" })
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto.email);
+  }
+
+  @Post("reset-password")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Redefinir senha com token" })
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.newPassword);
+  }
+
+  // ─── OAuth2 / Social Login ──────────────────────────────
+
+  @Post("google")
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ auth: { limit: 10, ttl: 60_000 } })
+  @ApiOperation({ summary: "Login via Google (ID token)" })
+  async googleLogin(
+    @Body() body: { idToken: string },
+    @Ip() ip: string,
+    @Req() req: any,
+  ) {
+    const profile = await this.googleStrategy.validateIdToken(body.idToken);
+    if (!profile) {
+      throw new (await import("@nestjs/common")).UnauthorizedException("Token Google invalido");
+    }
+    return this.authService.loginOrRegisterSocial(
+      "google",
+      profile.id,
+      profile.email,
+      profile.name,
+      profile.picture,
+      ip,
+      req.headers["user-agent"],
+    );
   }
 
   // ─── Perfil do usuário logado ────────────────────────────
