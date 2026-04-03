@@ -54,7 +54,6 @@ jobs:
 
       - name: Lint
         run: pnpm lint
-        continue-on-error: true
 
       - name: Unit tests
         env:
@@ -72,7 +71,20 @@ jobs:
           LIVEKIT_API_KEY: devkey
           LIVEKIT_API_SECRET: devsecret
           NODE_ENV: test
-        run: pnpm --filter @intimare/api test
+        run: pnpm --filter @intimare/api test -- --coverage --coverageThreshold='{"global":{"branches":50,"functions":50,"lines":60,"statements":60}}'
+
+      - name: Security audit
+        run: pnpm audit --audit-level=high || true
+
+      - name: Trivy vulnerability scan
+        if: github.ref == 'refs/heads/main'
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: "0"
+          format: table
 
   build:
     name: Build
@@ -160,3 +172,29 @@ jobs:
         if: success()
         run: |
           echo "To deploy: run 'pnpm --filter @intimare/database db:migrate:deploy' on the target environment"
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: docker
+    if: github.ref == 'refs/heads/main'
+    environment: staging
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            cd /opt/intimare
+            export IMAGE_TAG=${{ github.sha }}
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose -f docker-compose.prod.yml exec -T api npx prisma migrate deploy
+            sleep 10
+            curl -f http://localhost:3001/api/health || exit 1
+            echo "Deploy completed successfully"

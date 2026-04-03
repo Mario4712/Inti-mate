@@ -106,7 +106,65 @@ export class KycService {
   }
 
   private async sendToKycProvider(userId: string, body: any) {
-    // TODO: integrar com Unico Check ou Serpro
-    this.logger.log(`Enviando KYC para provider=${this.provider}, userId=${userId}`);
+    if (this.provider === "unico") {
+      await this.sendToUnico(userId, body);
+    } else if (this.provider === "serpro") {
+      this.logger.log(`[SERPRO] KYC submission for user ${userId} — requires Serpro government contract`);
+    } else {
+      this.logger.warn(`KYC provider '${this.provider}' nao reconhecido`);
+    }
+  }
+
+  private async sendToUnico(userId: string, body: any) {
+    const clientId = this.config.get("app.kyc.unicoClientId");
+    const clientSecret = this.config.get("app.kyc.unicoClientSecret");
+
+    if (!clientId || !clientSecret) {
+      this.logger.error("Unico Check credentials not configured");
+      return;
+    }
+
+    try {
+      const tokenRes = await fetch("https://api.unico.io/oauth2/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "client_credentials",
+          client_id: clientId,
+          client_secret: clientSecret,
+        }),
+      });
+
+      if (!tokenRes.ok) {
+        this.logger.error(`Unico token error: ${tokenRes.status}`);
+        return;
+      }
+
+      const { access_token } = (await tokenRes.json()) as any;
+
+      const verifyRes = await fetch("https://api.unico.io/v1/processes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${access_token}`,
+        },
+        body: JSON.stringify({
+          subject: { code: userId },
+          document: { type: body.documentType, url: body.documentUrl },
+          selfie: { url: body.selfieUrl },
+          callbackUrl: `${this.config.get("app.frontendUrl")?.replace(":3000", ":3001")}/api/v1/users/kyc/webhook`,
+        }),
+      });
+
+      if (!verifyRes.ok) {
+        this.logger.error(`Unico process error: ${verifyRes.status}`);
+        return;
+      }
+
+      const result = (await verifyRes.json()) as any;
+      this.logger.log(`Unico process created: ${result.id} for user ${userId}`);
+    } catch (err) {
+      this.logger.error("Unico Check API error:", err);
+    }
   }
 }

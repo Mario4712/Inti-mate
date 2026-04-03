@@ -1,6 +1,6 @@
-import { Module } from "@nestjs/common";
+import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
-import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
+import { ThrottlerModule } from "@nestjs/throttler";
 import { ScheduleModule } from "@nestjs/schedule";
 import { APP_GUARD } from "@nestjs/core";
 import { AuthModule } from "./auth/auth.module";
@@ -38,6 +38,12 @@ import { VrContentModule } from "./vr-content/vr-content.module";
 import { DatabaseModule } from "./common/database/database.module";
 import { RedisModule } from "./common/redis/redis.module";
 import { SentryModule } from "./common/sentry/sentry.module";
+import { HealthModule } from "./common/health/health.module";
+import { AuditModule } from "./common/audit/audit.module";
+import { DlqModule } from "./common/dlq/dlq.module";
+import { UserThrottleGuard } from "./common/guards/user-throttle.guard";
+import { RequestIdMiddleware } from "./common/middleware/request-id.middleware";
+import { RequestLoggerMiddleware } from "./common/middleware/request-logger.middleware";
 import appConfig from "./config/app.config";
 
 @Module({
@@ -68,6 +74,9 @@ import appConfig from "./config/app.config";
     DatabaseModule,
     RedisModule,
     SentryModule,
+    HealthModule,
+    AuditModule,
+    DlqModule,
     AuthModule,
     UsersModule,
     ModerationModule,
@@ -102,8 +111,14 @@ import appConfig from "./config/app.config";
     VrContentModule,
   ],
   providers: [
-    // Rate limiting aplicado globalmente
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // Rate limiting per user ID (falls back to IP for anonymous)
+    { provide: APP_GUARD, useClass: UserThrottleGuard },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(RequestIdMiddleware, RequestLoggerMiddleware)
+      .forRoutes("*");
+  }
+}

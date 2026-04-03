@@ -2,11 +2,34 @@ import { NestFactory } from "@nestjs/core";
 import { ValidationPipe, VersioningType } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
+import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
+
+let helmet: any;
+try { helmet = require("helmet"); } catch {}
+let expressJson: any, expressUrlencoded: any;
+try { const e = require("express"); expressJson = e.json; expressUrlencoded = e.urlencoded; } catch {}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: ["error", "warn", "log"],
   });
+
+  // Security headers
+  if (helmet) app.use(helmet({ contentSecurityPolicy: false }));
+
+  // Trust proxy (for running behind reverse proxy / load balancer)
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set("trust proxy", 1);
+
+  // Request size limits
+  if (expressJson) app.use(expressJson({ limit: "10mb" }));
+  if (expressUrlencoded) app.use(expressUrlencoded({ extended: true, limit: "10mb" }));
+
+  // Global exception filter
+  app.useGlobalFilters(new AllExceptionsFilter());
+
+  // Graceful shutdown
+  app.enableShutdownHooks();
 
   // Prefixo global da API
   app.setGlobalPrefix("api");

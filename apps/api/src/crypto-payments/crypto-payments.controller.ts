@@ -1,11 +1,13 @@
 import {
   Controller, Get, Post, Param, Body, Query,
   UseGuards, Request, ParseIntPipe, DefaultValuePipe,
-  HttpCode, HttpStatus,
+  HttpCode, HttpStatus, Headers, Req, UnauthorizedException,
 } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { ApiTags, ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
-import { IsString, IsNumber, Min, IsEnum, IsIn } from "class-validator";
+import { IsNumber, Min, IsIn } from "class-validator";
 import { Type } from "class-transformer";
+import * as crypto from "crypto";
 import { CryptoPaymentsService } from "./crypto-payments.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
@@ -18,16 +20,13 @@ class CreateChargeDto {
   currency: string;
 }
 
-class WebhookDto {
-  @IsString() providerRef: string;
-  @IsEnum(["CONFIRMED", "FAILED"]) status: "CONFIRMED" | "FAILED";
-  @IsString() webhookSecret: string; // validado no service em prod
-}
-
 @ApiTags("Crypto Payments")
 @Controller("crypto-payments")
 export class CryptoPaymentsController {
-  constructor(private readonly service: CryptoPaymentsService) {}
+  constructor(
+    private readonly service: CryptoPaymentsService,
+    private readonly config: ConfigService,
+  ) {}
 
   @Post("charge")
   @ApiBearerAuth()
@@ -64,10 +63,23 @@ export class CryptoPaymentsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Webhook do provedor cripto (Coinbase Commerce / BTCPay)",
-    description: "Endpoint público — validação HMAC feita no service em produção.",
+    description: "Endpoint público — validação HMAC via header x-webhook-signature.",
   })
-  webhook(@Body() dto: WebhookDto) {
-    // TODO prod: validar assinatura HMAC antes de processar
-    return this.service.confirmCharge(dto.providerRef, dto.status);
+  webhook(@Req() req: any, @Headers("x-webhook-signature") signature: string) {
+    const body = JSON.stringify(req.body);
+    const secret = this.config.get<string>("app.crypto.webhookSecret");
+
+    if (secret && process.env.NODE_ENV === "production") {
+      const expected = crypto
+        .createHmac("sha256", secret)
+        .update(body)
+        .digest("hex");
+      if (!signature || !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature))) {
+        throw new UnauthorizedException("Invalid webhook signature");
+      }
+    }
+
+    const { providerRef, status } = req.body;
+    return this.service.confirmCharge(providerRef, status);
   }
 }

@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { PrismaService } from "../common/database/prisma.service";
+import { PagarmeStrategy } from "../payments/strategies/pagarme.strategy";
 import { RequestWithdrawalDto } from "./dto/withdrawal.dto";
 import { addDays } from "date-fns";
 
@@ -16,7 +17,10 @@ const MIN_WITHDRAWAL_CENTS = 2000; // R$ 20,00
 export class WithdrawalsService {
   private readonly logger = new Logger(WithdrawalsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private pagarme: PagarmeStrategy,
+  ) {}
 
   async getBalance(creatorId: string) {
     const balance = await this.prisma.creatorBalance.findUnique({
@@ -145,8 +149,15 @@ export class WithdrawalsService {
           data: { status: "PROCESSING" },
         });
 
-        // TODO produção: chamar API do Pagar.me para transferência PIX
-        this.logger.log(`[PIX] Processando saque ${w.id}: R$${(w.amount / 100).toFixed(2)}`);
+        // Transferência PIX via Pagar.me
+        const transfer = await this.pagarme.createPixTransfer({
+          amountCents: w.amount,
+          pixKey: w.pixKey,
+          pixKeyType: w.pixKeyType.toLowerCase() as any,
+          description: `Saque ${w.id} - Inti.mate`,
+          metadata: { withdrawalId: w.id, creatorId: w.creatorId },
+        });
+        this.logger.log(`[PIX] Transfer ${transfer.id} status=${transfer.status} for withdrawal ${w.id}`);
 
         await this.prisma.$transaction([
           this.prisma.withdrawal.update({

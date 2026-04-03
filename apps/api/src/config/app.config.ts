@@ -69,6 +69,10 @@ export default registerAs("app", () => ({
     apiSecret: process.env.LIVEKIT_API_SECRET ?? "devsecret",
   },
 
+  crypto: {
+    webhookSecret: process.env.CRYPTO_WEBHOOK_SECRET,
+  },
+
   pagarme: {
     apiKey: process.env.PAGARME_API_KEY,
     webhookSecret: process.env.PAGARME_WEBHOOK_SECRET,
