@@ -39,8 +39,12 @@ export class LivesService {
     private config:  ConfigService,
   ) {
     this.livekitHost      = config.get("app.livekit.host")      ?? "ws://localhost:7880";
-    this.livekitApiKey    = config.get("app.livekit.apiKey")    ?? "devkey";
-    this.livekitApiSecret = config.get("app.livekit.apiSecret") ?? "devsecret";
+    this.livekitApiKey    = config.get("app.livekit.apiKey")    ?? "";
+    this.livekitApiSecret = config.get("app.livekit.apiSecret") ?? "";
+
+    if (!this.livekitApiKey || !this.livekitApiSecret) {
+      this.logger.warn("LIVEKIT_API_KEY / LIVEKIT_API_SECRET não configurados — lives usarão tokens mock");
+    }
   }
 
   // ─── Criar live ───────────────────────────────────────────
@@ -239,7 +243,7 @@ export class LivesService {
     identity: string,
     role:     "publisher" | "subscriber",
   ): Promise<string> {
-    if (!this.livekitApiKey || this.livekitApiKey === "devkey") {
+    if (!this.livekitApiKey || !this.livekitApiSecret) {
       this.logger.warn(`[mock] LiveKit token para ${identity} na sala ${roomName} como ${role}`);
       return `mock-token-${identity}-${roomName}-${role}`;
     }

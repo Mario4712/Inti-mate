@@ -73,21 +73,32 @@ export class AuctionsService {
       );
     }
 
-    await this.prisma.$transaction([
-      this.prisma.auctionBid.create({
-        data: { auctionId, bidderId, amount: amountCents },
-      }),
-      this.prisma.auction.update({
-        where: { id: auctionId },
-        data:  { currentBid: amountCents, winnerId: bidderId },
-      }),
-    ]);
+    // Optimistic locking: only update if currentBid hasn't changed since we read it.
+    // This prevents two concurrent bids from both passing validation.
+    const result = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.auction.updateMany({
+        where: {
+          id: auctionId,
+          status: "OPEN",
+          currentBid: auction.currentBid, // optimistic lock
+        },
+        data: { currentBid: amountCents, winnerId: bidderId },
+      });
 
-    return {
-      auctionId,
-      currentBid: amountCents,
-      endsAt:     auction.endsAt,
-    };
+      if (updated.count === 0) {
+        throw new BadRequestException(
+          "Outro lance foi registrado antes do seu. Atualize e tente novamente.",
+        );
+      }
+
+      await tx.auctionBid.create({
+        data: { auctionId, bidderId, amount: amountCents },
+      });
+
+      return { auctionId, currentBid: amountCents, endsAt: auction.endsAt };
+    });
+
+    return result;
   }
 
   // ─── Detalhes + histórico de lances ──────────────────────

@@ -23,7 +23,7 @@ import { UpdateMediaDto } from "./dto/content.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { OptionalJwtGuard } from "../auth/guards/optional-jwt.guard";
 
-const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500 MB
+const MAX_FILE_SIZE = 150 * 1024 * 1024; // 150 MB
 
 @ApiTags("Content")
 @ApiBearerAuth()

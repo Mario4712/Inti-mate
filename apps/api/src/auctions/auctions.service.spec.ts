@@ -16,6 +16,7 @@ const mockPrisma: any = {
     findFirst: jest.fn(),
     findMany: jest.fn(),
     update: jest.fn(),
+    updateMany: jest.fn(),
   },
   auctionBid: {
     create: jest.fn(),
@@ -103,8 +104,8 @@ describe("AuctionsService", () => {
 
     it("should place a valid bid", async () => {
       mockPrisma.auction.findUnique.mockResolvedValue(openAuction);
+      mockPrisma.auction.updateMany.mockResolvedValue({ count: 1 });
       mockPrisma.auctionBid.create.mockResolvedValue({});
-      mockPrisma.auction.update.mockResolvedValue({});
 
       const result = await service.placeBid("auc1", "bidder1", 700);
       expect(result.currentBid).toBe(700);

@@ -51,44 +51,53 @@ export class WithdrawalsService {
       throw new BadRequestException("Verificação de identidade pendente. Complete o KYC para sacar.");
     }
 
-    const balance = await this.prisma.creatorBalance.findUnique({ where: { creatorId } });
-    if (!balance || balance.availableAmount < dto.amount) {
-      throw new BadRequestException("Saldo insuficiente");
-    }
-
     if (dto.amount < MIN_WITHDRAWAL_CENTS) {
       throw new BadRequestException(`Valor mínimo para saque: R$ ${(MIN_WITHDRAWAL_CENTS / 100).toFixed(2)}`);
     }
 
-    // Verifica se não há saque pendente
-    const pending = await this.prisma.withdrawal.findFirst({
-      where: { creatorId, status: { in: ["PENDING", "PROCESSING"] } },
-    });
-    if (pending) {
-      throw new BadRequestException("Você já possui um saque em processamento. Aguarde a conclusão.");
-    }
-
     const scheduledDate = addDays(new Date(), WITHDRAWAL_DAYS);
 
-    const [withdrawal] = await this.prisma.$transaction([
-      this.prisma.withdrawal.create({
+    // All checks + creation inside a serialized transaction to prevent race conditions.
+    // Two concurrent requests will be serialized at DB level.
+    const withdrawal = await this.prisma.$transaction(async (tx) => {
+      // Lock the balance row for this creator (SELECT ... FOR UPDATE via raw)
+      const [balance] = await tx.$queryRawUnsafe<any[]>(
+        `SELECT * FROM "CreatorBalance" WHERE "creatorId" = $1 FOR UPDATE`,
+        creatorId,
+      );
+
+      if (!balance || balance.availableAmount < dto.amount) {
+        throw new BadRequestException("Saldo insuficiente");
+      }
+
+      // Check pending withdrawal inside the transaction
+      const pending = await tx.withdrawal.findFirst({
+        where: { creatorId, status: { in: ["PENDING", "PROCESSING"] } },
+      });
+      if (pending) {
+        throw new BadRequestException("Você já possui um saque em processamento. Aguarde a conclusão.");
+      }
+
+      const w = await tx.withdrawal.create({
         data: {
           creatorId,
           amount: dto.amount,
-          pixKey: this.maskPixKey(dto.pixKey, dto.pixKeyType), // mascara nos logs
+          pixKey: this.maskPixKey(dto.pixKey, dto.pixKeyType),
           pixKeyType: dto.pixKeyType,
           scheduledDate,
         },
-      }),
-      // Reserva o valor (move de available para pending)
-      this.prisma.creatorBalance.update({
+      });
+
+      await tx.creatorBalance.update({
         where: { creatorId },
         data: {
           availableAmount: { decrement: dto.amount },
           pendingAmount:   { increment: dto.amount },
         },
-      }),
-    ]);
+      });
+
+      return w;
+    });
 
     this.logger.log(`Saque solicitado: ${withdrawal.id} | criador=${creatorId} | R$${(dto.amount / 100).toFixed(2)}`);
 

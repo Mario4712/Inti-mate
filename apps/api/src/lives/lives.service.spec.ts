@@ -41,8 +41,8 @@ const mockConfig = {
   get: jest.fn((key: string) => {
     const map: Record<string, string> = {
       "app.livekit.host": "ws://localhost:7880",
-      "app.livekit.apiKey": "devkey",
-      "app.livekit.apiSecret": "devsecret",
+      "app.livekit.apiKey": "",
+      "app.livekit.apiSecret": "",
     };
     return map[key] ?? "";
   }),

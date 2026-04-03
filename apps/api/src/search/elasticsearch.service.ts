@@ -165,6 +165,9 @@ export class ElasticsearchService implements OnModuleInit {
   // ─── Autocomplete de tags ─────────────────────────────────
 
   async suggestTags(prefix: string, limit = 10): Promise<string[]> {
+    // Escape regex special characters to prevent injection
+    const safePrefix = prefix.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
     const response = await this.client.search({
       index: CREATORS_INDEX,
       size:  0,
@@ -173,7 +176,7 @@ export class ElasticsearchService implements OnModuleInit {
         tag_suggestions: {
           terms: {
             field:   "tags",
-            include: `${prefix.toLowerCase()}.*`,
+            include: `${safePrefix}.*`,
             size:    limit,
           },
         },
