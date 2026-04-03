@@ -41,6 +41,7 @@ import { SentryModule } from "./common/sentry/sentry.module";
 import { HealthModule } from "./common/health/health.module";
 import { AuditModule } from "./common/audit/audit.module";
 import { DlqModule } from "./common/dlq/dlq.module";
+import { AccessLogModule } from "./common/access-log/access-log.module";
 import { UserThrottleGuard } from "./common/guards/user-throttle.guard";
 import { RequestIdMiddleware } from "./common/middleware/request-id.middleware";
 import { RequestLoggerMiddleware } from "./common/middleware/request-logger.middleware";
@@ -77,6 +78,7 @@ import appConfig from "./config/app.config";
     HealthModule,
     AuditModule,
     DlqModule,
+    AccessLogModule,
     AuthModule,
     UsersModule,
     ModerationModule,

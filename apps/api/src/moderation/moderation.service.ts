@@ -1,6 +1,7 @@
 import { Injectable, Logger, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../common/database/prisma.service";
 import { CsamService } from "./csam.service";
+import { DualCustodyService } from "./dual-custody.service";
 
 export type ContentType = "photo" | "video" | "message" | "profile_avatar";
 
@@ -17,6 +18,7 @@ export class ModerationService {
   constructor(
     private prisma: PrismaService,
     private csamService: CsamService,
+    private dualCustody: DualCustodyService,
   ) {}
 
   /**
@@ -70,25 +72,33 @@ export class ModerationService {
           contentId,
           contentType,
           action: "ESCALATED",
-          reason: "Conteúdo suspeito — aguarda revisão humana",
+          reason: "Conteúdo suspeito — aguarda revisão humana (custódia dupla)",
           csamHash: scanResult.hash,
         },
       });
 
+      // Cria registro de custódia dupla obrigatória
+      await this.dualCustody.createReview(contentId);
+
       return { approved: false, requiresReview: true };
     }
 
-    // 3. Aprovado — ainda registra para auditoria
+    // 3. Passou no CSAM scan → dupla custódia para todo conteúdo
+    // Conteúdo fica PENDING_REVIEW até 2 moderadores aprovarem
     await this.prisma.moderationLog.create({
       data: {
         contentId,
         contentType,
         action: "APPROVED",
         csamHash: scanResult.hash,
+        reason: "CSAM scan limpo — encaminhado para custódia dupla",
       },
     });
 
-    return { approved: true, requiresReview: false };
+    // Todo conteúdo passa por dupla custódia antes de ficar disponível
+    await this.dualCustody.createReview(contentId);
+
+    return { approved: false, requiresReview: true };
   }
 
   /**

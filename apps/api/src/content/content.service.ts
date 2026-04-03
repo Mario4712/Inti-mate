@@ -12,6 +12,7 @@ import { PrismaService } from "../common/database/prisma.service";
 import { StorageService } from "./storage.service";
 import { MediaProcessorService } from "./media-processor.service";
 import { ModerationService } from "../moderation/moderation.service";
+import { MediaAccessLogService } from "../common/access-log/media-access-log.service";
 import { UpdateMediaDto } from "./dto/content.dto";
 
 const ALLOWED_IMAGE_MIME = ["image/jpeg", "image/png", "image/webp"];
@@ -26,6 +27,7 @@ export class ContentService {
     private storage: StorageService,
     private processor: MediaProcessorService,
     private moderation: ModerationService,
+    private accessLog: MediaAccessLogService,
   ) {}
 
   // ─── Upload ──────────────────────────────────────────────
@@ -181,7 +183,11 @@ export class ContentService {
     };
   }
 
-  async getMediaItem(mediaId: string, viewerId: string) {
+  async getMediaItem(
+    mediaId: string,
+    viewerId: string,
+    sessionMeta?: { sessionId?: string; ipAddress?: string; userAgent?: string },
+  ) {
     const media = await this.prisma.media.findUnique({ where: { id: mediaId } });
     if (!media || media.status !== "APPROVED") throw new NotFoundException("Conteúdo não encontrado");
 
@@ -197,6 +203,17 @@ export class ContentService {
       where: { id: mediaId },
       data: { viewCount: { increment: 1 } },
     });
+
+    // Registra acesso com dados da sessão (fire-and-forget)
+    const accessType = media.type === "VIDEO" ? "STREAM" : "VIEW";
+    this.accessLog.logAccess({
+      mediaId,
+      userId: viewerId,
+      sessionId: sessionMeta?.sessionId,
+      ipAddress: sessionMeta?.ipAddress,
+      userAgent: sessionMeta?.userAgent,
+      accessType: accessType as any,
+    }).catch(() => {}); // never block response
 
     // Para vídeos privados, gerar URL assinada (expira em 2h)
     let streamUrl = media.processedUrl;

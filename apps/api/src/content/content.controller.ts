@@ -15,10 +15,13 @@ import {
   HttpStatus,
   UseGuards,
   Request,
+  Ip,
+  Headers,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiTags, ApiBearerAuth, ApiConsumes, ApiBody, ApiOperation } from "@nestjs/swagger";
 import { ContentService } from "./content.service";
+import { MediaAccessLogService } from "../common/access-log/media-access-log.service";
 import { UpdateMediaDto } from "./dto/content.dto";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { OptionalJwtGuard } from "../auth/guards/optional-jwt.guard";
@@ -29,7 +32,10 @@ const MAX_FILE_SIZE = 150 * 1024 * 1024; // 150 MB
 @ApiBearerAuth()
 @Controller("content")
 export class ContentController {
-  constructor(private readonly contentService: ContentService) {}
+  constructor(
+    private readonly contentService: ContentService,
+    private readonly accessLog: MediaAccessLogService,
+  ) {}
 
   // ─── Upload ──────────────────────────────────────────────
 
@@ -84,12 +90,32 @@ export class ContentController {
 
   @Get(":mediaId")
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: "Acessa um item de mídia (incrementa view count)" })
+  @ApiOperation({ summary: "Acessa um item de mídia (incrementa view count + registra acesso)" })
   async getMediaItem(
     @Param("mediaId") mediaId: string,
     @Request() req: any,
+    @Ip() ip: string,
+    @Headers("user-agent") userAgent: string,
   ) {
-    return this.contentService.getMediaItem(mediaId, req.user.id);
+    return this.contentService.getMediaItem(mediaId, req.user.id, {
+      sessionId: req.user.sessionId ?? undefined,
+      ipAddress: ip,
+      userAgent,
+    });
+  }
+
+  // ─── Progresso de visualização (vídeos) ────────────────────
+
+  @Post(":logId/watch-progress")
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Atualiza tempo assistido de um vídeo (player reporta progresso)" })
+  async updateWatchProgress(
+    @Param("logId") logId: string,
+    @Body() body: { durationSec: number; completed: boolean },
+  ) {
+    await this.accessLog.updateWatchProgress(logId, body.durationSec, body.completed);
+    return { ok: true };
   }
 
   // ─── Update ───────────────────────────────────────────────

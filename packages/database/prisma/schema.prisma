@@ -501,6 +501,8 @@ model Media {
 
   editSuggestions EditSuggestion[]
   vrContent       VrContent?
+  accessLogs      MediaAccessLog[]
+  custodyReviews  ContentCustodyReview[]
 
   @@index([creatorId, status])
   @@index([creatorId, visibility])
@@ -1372,4 +1374,75 @@ model VrContent {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────
+// RASTREABILIDADE DE ACESSO A CONTEÚDO
+// ─────────────────────────────────────────────────────────────
+
+model MediaAccessLog {
+  id          String   @id @default(cuid())
+  mediaId     String
+  media       Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  userId      String?            // null = anônimo (conteúdo público)
+  sessionId   String?            // ref Session.id para vincular ao dispositivo/IP
+
+  // Dados da sessão capturados no momento do acesso
+  ipAddress   String?
+  userAgent   String?
+  country     String?  @db.VarChar(2)
+
+  // Detalhes de consumo
+  accessType  String   @default("VIEW")  // VIEW | DOWNLOAD | STREAM
+  durationSec Int?                        // tempo assistido (vídeos)
+  completedAt DateTime?                   // null = não terminou
+
+  createdAt   DateTime @default(now())
+
+  @@index([mediaId, createdAt])
+  @@index([userId, createdAt])
+  @@index([sessionId])
+  @@index([ipAddress])
+}
+
+// ─────────────────────────────────────────────────────────────
+// DUPLA CUSTÓDIA — MODERAÇÃO COM 2 REVISORES INDEPENDENTES
+// ─────────────────────────────────────────────────────────────
+
+enum CustodyDecision {
+  APPROVE
+  REJECT
+  ESCALATE
+}
+
+model ContentCustodyReview {
+  id          String          @id @default(cuid())
+  mediaId     String
+  media       Media           @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  // Primeiro revisor
+  reviewer1Id String?
+  decision1   CustodyDecision?
+  reason1     String?
+  reviewedAt1 DateTime?
+
+  // Segundo revisor (independente — não vê decisão do primeiro)
+  reviewer2Id String?
+  decision2   CustodyDecision?
+  reason2     String?
+  reviewedAt2 DateTime?
+
+  // Decisão final consolidada
+  finalDecision CustodyDecision?
+  resolvedAt    DateTime?
+  resolvedBy    String?          // "SYSTEM" ou moderatorId (em caso de conflito)
+  conflictNote  String?          // preenchido quando há divergência
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([mediaId])
+  @@index([reviewer1Id])
+  @@index([reviewer2Id])
+  @@index([finalDecision])
 }

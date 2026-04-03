@@ -4,6 +4,7 @@ import { PrismaService } from "../common/database/prisma.service";
 import { StorageService } from "./storage.service";
 import { MediaProcessorService } from "./media-processor.service";
 import { ModerationService } from "../moderation/moderation.service";
+import { MediaAccessLogService } from "../common/access-log/media-access-log.service";
 import {
   BadRequestException,
   ForbiddenException,
@@ -56,6 +57,11 @@ const mockModeration = {
   processUpload: jest.fn().mockResolvedValue({ approved: true, requiresReview: false }),
 };
 
+const mockAccessLog = {
+  logAccess: jest.fn().mockResolvedValue(undefined),
+  updateWatchProgress: jest.fn().mockResolvedValue(undefined),
+};
+
 // ─── Test Suite ────────────────────────────────────────────
 
 describe("ContentService", () => {
@@ -71,6 +77,7 @@ describe("ContentService", () => {
         { provide: StorageService, useValue: mockStorage },
         { provide: MediaProcessorService, useValue: mockProcessor },
         { provide: ModerationService, useValue: mockModeration },
+        { provide: MediaAccessLogService, useValue: mockAccessLog },
       ],
     }).compile();
 
