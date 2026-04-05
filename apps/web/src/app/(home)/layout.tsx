@@ -81,7 +81,7 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
                 <LayoutDashboard size={18} />
               </Link>
             )}
-            <Link href="/profile" className="rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-gray-200">
+            <Link href="/settings" className="rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-gray-200" title="Configurações">
               <User size={18} />
             </Link>
             <button onClick={logout} className="rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-gray-200" title="Sair">
