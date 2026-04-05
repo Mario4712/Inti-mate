@@ -4,6 +4,7 @@ import Image from "next/image";
 import { apiServer } from "@/lib/api-server";
 import { CreatorFeed } from "@/components/content/CreatorFeed";
 import { TipButton } from "@/components/tips/TipButton";
+import { DigitalShop } from "@/components/shop/DigitalShop";
 
 interface CreatorProfile {
   id:           string;
@@ -223,6 +224,9 @@ export default async function CreatorPublicPage({
               </p>
             </section>
           )}
+
+          {/* Loja Digital */}
+          <DigitalShop creatorId={creator.id} />
 
           {/* Feed de conteúdo com paywall */}
           <section className="mt-8 mb-16" aria-labelledby="content-heading">
