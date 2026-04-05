@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import {
-  Bell,
   Compass,
   Home,
   LayoutDashboard,
@@ -72,9 +72,7 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
 
           {/* Right actions */}
           <div className="flex items-center gap-1 shrink-0">
-            <Link href="/notifications" className="rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-gray-200">
-              <Bell size={18} />
-            </Link>
+            <NotificationBell />
             <Link href="/messages" className="rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-gray-200">
               <MessageCircle size={18} />
             </Link>
