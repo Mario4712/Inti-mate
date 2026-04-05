@@ -18,7 +18,7 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@intimare/database": ["../../packages/database/src"]
+      "@intimare/database": ["../../packages/database/dist"]
     }
   }
 }

@@ -233,37 +233,37 @@ async function main() {
     prisma.media.create({
       data: {
         creatorId: creators[0].id, type: "PHOTO", title: "Dragão Celestial — Ilustração digital",
-        status: "APPROVED", viewCount: 234, thumbnailUrl: null, contentUrl: "https://placehold.co/800x600",
+        status: "APPROVED", viewCount: 234, thumbnailUrl: null, originalUrl: "https://placehold.co/800x600",
       },
     }),
     prisma.media.create({
       data: {
         creatorId: creators[0].id, type: "VIDEO", title: "Speed paint: Floresta Encantada",
-        status: "APPROVED", viewCount: 156, thumbnailUrl: null, contentUrl: "https://placehold.co/800x600",
+        status: "APPROVED", viewCount: 156, thumbnailUrl: null, originalUrl: "https://placehold.co/800x600",
       },
     }),
     prisma.media.create({
       data: {
         creatorId: creators[1].id, type: "VIDEO", title: "Treino HIIT 30min — Semana 1",
-        status: "APPROVED", viewCount: 489, thumbnailUrl: null, contentUrl: "https://placehold.co/800x600",
+        status: "APPROVED", viewCount: 489, thumbnailUrl: null, originalUrl: "https://placehold.co/800x600",
       },
     }),
     prisma.media.create({
       data: {
         creatorId: creators[1].id, type: "PHOTO", title: "Plano alimentar — Definição muscular",
-        status: "APPROVED", viewCount: 312, thumbnailUrl: null, contentUrl: "https://placehold.co/800x600",
+        status: "APPROVED", viewCount: 312, thumbnailUrl: null, originalUrl: "https://placehold.co/800x600",
       },
     }),
     prisma.media.create({
       data: {
         creatorId: creators[2].id, type: "VIDEO", title: "Cover: Garota de Ipanema (Acústico)",
-        status: "APPROVED", viewCount: 678, thumbnailUrl: null, contentUrl: "https://placehold.co/800x600",
+        status: "APPROVED", viewCount: 678, thumbnailUrl: null, originalUrl: "https://placehold.co/800x600",
       },
     }),
     prisma.media.create({
       data: {
         creatorId: creators[2].id, type: "VIDEO", title: "Making Of — Sessão de gravação",
-        status: "APPROVED", viewCount: 102, thumbnailUrl: null, contentUrl: "https://placehold.co/800x600",
+        status: "APPROVED", viewCount: 102, thumbnailUrl: null, originalUrl: "https://placehold.co/800x600",
       },
     }),
   ]);
@@ -293,7 +293,7 @@ async function main() {
       { userId: creators[0].id, type: "NEW_SUBSCRIBER", title: "Novo assinante!", body: "joao_fan assinou seu plano Básico", link: "/dashboard/subscribers" },
       { userId: creators[0].id, type: "NEW_SUBSCRIBER", title: "Novo assinante!", body: "maria_fan assinou seu plano Premium", link: "/dashboard/subscribers" },
       { userId: creators[1].id, type: "NEW_SUBSCRIBER", title: "Novo assinante!", body: "pedro_fan assinou seu plano Treinos", link: "/dashboard/subscribers" },
-      { userId: fans[0].id, type: "CONTENT_PUBLISHED", title: "Novo conteúdo!", body: "Luna Artista publicou: Dragão Celestial", link: "/creator/luna_art" },
+      { userId: fans[0].id, type: "CONTENT_APPROVED", title: "Novo conteúdo!", body: "Luna Artista publicou: Dragão Celestial", link: "/creator/luna_art" },
     ],
   });
 

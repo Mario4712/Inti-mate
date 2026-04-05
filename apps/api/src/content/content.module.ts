@@ -9,6 +9,6 @@ import { ModerationModule } from "../moderation/moderation.module";
   imports: [ModerationModule],
   controllers: [ContentController],
   providers: [ContentService, StorageService, MediaProcessorService],
-  exports: [ContentService, StorageService],
+  exports: [ContentService, StorageService, MediaProcessorService],
 })
 export class ContentModule {}

@@ -2,7 +2,8 @@
   "name": "@intimare/database",
   "version": "0.1.0",
   "private": true,
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
@@ -13,16 +14,14 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
-    "@prisma/client": "^5.13.0"
+    "@prisma/client": "^5.13.0",
+    "bcrypt": "^5.1.1"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
     "prisma": "^5.13.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.0"
-  },
-  "dependencies": {
-    "@prisma/client": "^5.13.0",
-    "bcrypt": "^5.1.1"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"commonjs\"} src/seed.ts"

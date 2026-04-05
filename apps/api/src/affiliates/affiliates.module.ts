@@ -1,8 +1,10 @@
 import { Module } from "@nestjs/common";
 import { AffiliatesController } from "./affiliates.controller";
 import { AffiliatesService } from "./affiliates.service";
+import { PaymentsModule } from "../payments/payments.module";
 
 @Module({
+  imports: [PaymentsModule],
   controllers: [AffiliatesController],
   providers: [AffiliatesService],
   exports: [AffiliatesService],

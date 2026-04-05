@@ -9,6 +9,6 @@ import { WebhookController } from "./webhook.controller";
 @Module({
   controllers: [WebhookController, PpvController],
   providers: [PaymentsService, PpvService, PagarmeStrategy, StripeStrategy],
-  exports: [PaymentsService, PpvService],
+  exports: [PaymentsService, PpvService, PagarmeStrategy],
 })
 export class PaymentsModule {}
