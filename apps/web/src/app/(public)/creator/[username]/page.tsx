@@ -5,6 +5,7 @@ import { apiServer } from "@/lib/api-server";
 import { CreatorFeed } from "@/components/content/CreatorFeed";
 import { TipButton } from "@/components/tips/TipButton";
 import { DigitalShop } from "@/components/shop/DigitalShop";
+import { AiChatButton } from "@/components/ai-persona/AiChatButton";
 
 interface CreatorProfile {
   id:           string;
@@ -185,6 +186,7 @@ export default async function CreatorPublicPage({
             <span>{creator.subscriberCount.toLocaleString("pt-BR")} assinantes</span>
             {creator.category && <span>{creator.category}</span>}
             <TipButton creatorId={creator.id} creatorName={creator.artisticName} />
+            <AiChatButton creatorId={creator.id} />
           </div>
 
           {/* Planos de assinatura */}
