@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { apiServer } from "@/lib/api-server";
+import { CreatorFeed } from "@/components/content/CreatorFeed";
 
 interface CreatorProfile {
   id:           string;
@@ -207,7 +208,7 @@ export default async function CreatorPublicPage({
                       <p className="mt-2 text-sm text-gray-400">{plan.description}</p>
                     )}
                     <a
-                      href={`/subscribe/${creator.username}/${plan.id}`}
+                      href={`/subscribe/${creator.id}`}
                       className="mt-4 block w-full rounded-lg bg-purple-600 px-4 py-2 text-center font-medium transition hover:bg-purple-500"
                     >
                       Assinar
@@ -221,39 +222,13 @@ export default async function CreatorPublicPage({
             </section>
           )}
 
-          {/* Preview de conteúdo (thumbnails desbloqueados apenas para assinantes) */}
-          {creator.recentMedia?.length > 0 && (
-            <section className="mt-8 mb-16" aria-labelledby="content-heading">
-              <h2 id="content-heading" className="mb-4 text-xl font-semibold">
-                Conteúdo Recente
-              </h2>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {creator.recentMedia.map((media) => (
-                  <div
-                    key={media.id}
-                    className="relative aspect-square overflow-hidden rounded-lg bg-gray-800"
-                  >
-                    {media.thumbnailUrl ? (
-                      <Image
-                        src={media.thumbnailUrl}
-                        alt={media.title ?? "Conteúdo exclusivo"}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 33vw, 200px"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-gray-600">
-                        {media.type === "VIDEO" ? "▶" : "🔒"}
-                      </div>
-                    )}
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity">
-                      <span className="text-sm font-medium">🔒 Assinantes</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
+          {/* Feed de conteúdo com paywall */}
+          <section className="mt-8 mb-16" aria-labelledby="content-heading">
+            <h2 id="content-heading" className="mb-4 text-xl font-semibold">
+              Conteúdo
+            </h2>
+            <CreatorFeed creatorId={creator.id} creatorUsername={creator.username} />
+          </section>
         </div>
       </main>
     </>
