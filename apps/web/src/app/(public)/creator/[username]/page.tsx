@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import { apiServer } from "@/lib/api-server";
 import { CreatorFeed } from "@/components/content/CreatorFeed";
+import { TipButton } from "@/components/tips/TipButton";
 
 interface CreatorProfile {
   id:           string;
@@ -178,10 +179,11 @@ export default async function CreatorPublicPage({
             </div>
           )}
 
-          {/* Stats */}
-          <div className="mt-4 flex flex-wrap justify-center gap-4 text-sm text-gray-400 sm:justify-start sm:gap-6">
+          {/* Stats + Actions */}
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-4 text-sm text-gray-400 sm:justify-start sm:gap-6">
             <span>{creator.subscriberCount.toLocaleString("pt-BR")} assinantes</span>
             {creator.category && <span>{creator.category}</span>}
+            <TipButton creatorId={creator.id} creatorName={creator.artisticName} />
           </div>
 
           {/* Planos de assinatura */}
