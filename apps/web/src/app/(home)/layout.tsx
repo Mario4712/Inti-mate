@@ -12,6 +12,7 @@ import {
   MessageCircle,
   Search,
   User,
+  Wallet,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -77,9 +78,14 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
               <MessageCircle size={18} />
             </Link>
             {isCreator && (
-              <Link href="/dashboard" className="rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-gray-200" title="Dashboard">
-                <LayoutDashboard size={18} />
-              </Link>
+              <>
+                <Link href="/wallet" className="rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-gray-200" title="Carteira">
+                  <Wallet size={18} />
+                </Link>
+                <Link href="/dashboard" className="rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-gray-200" title="Dashboard">
+                  <LayoutDashboard size={18} />
+                </Link>
+              </>
             )}
             <Link href="/settings" className="rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-gray-200" title="Configurações">
               <User size={18} />
