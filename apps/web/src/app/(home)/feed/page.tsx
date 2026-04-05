@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Users, Star, TrendingUp, Loader2 } from "lucide-react";
 import api from "@/lib/api";
+import { StoriesBar } from "@/components/stories/StoriesBar";
 
 interface Creator {
   id: string;
@@ -59,6 +60,9 @@ export default function FeedPage() {
 
   return (
     <div className="space-y-10">
+      {/* Stories */}
+      <StoriesBar />
+
       {/* Recomendações personalizadas */}
       <section>
         <div className="mb-4 flex items-center gap-2">
