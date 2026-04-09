@@ -4,7 +4,7 @@ import { CollabService } from "./collab.service";
 import { ContentModule } from "../content/content.module";
 
 @Module({
-  imports: [ContentModule],
+  imports:     [ContentModule],
   controllers: [CollabController],
   providers:   [CollabService],
   exports:     [CollabService],

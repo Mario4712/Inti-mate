@@ -8,6 +8,7 @@ import {
   MaxLength,
   MinLength,
 } from "class-validator";
+import { Transform } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { Role } from "@intimare/database";
 
@@ -45,6 +46,7 @@ export class RegisterDto {
   @IsString()
   @MinLength(3)
   @MaxLength(50)
+  @Transform(({ value }) => (value === "" ? undefined : value))
   artisticName?: string;
 
   // Aceite obrigatório dos termos e política de privacidade

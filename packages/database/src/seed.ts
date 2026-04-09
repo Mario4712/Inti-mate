@@ -293,7 +293,7 @@ async function main() {
       { userId: creators[0].id, type: "NEW_SUBSCRIBER", title: "Novo assinante!", body: "joao_fan assinou seu plano Básico", link: "/dashboard/subscribers" },
       { userId: creators[0].id, type: "NEW_SUBSCRIBER", title: "Novo assinante!", body: "maria_fan assinou seu plano Premium", link: "/dashboard/subscribers" },
       { userId: creators[1].id, type: "NEW_SUBSCRIBER", title: "Novo assinante!", body: "pedro_fan assinou seu plano Treinos", link: "/dashboard/subscribers" },
-      { userId: fans[0].id, type: "CONTENT_APPROVED", title: "Novo conteúdo!", body: "Luna Artista publicou: Dragão Celestial", link: "/creator/luna_art" },
+      { userId: fans[0].id, type: "NEW_SUBSCRIBER", title: "Novo conteúdo!", body: "Luna Artista publicou: Dragão Celestial", link: "/creator/luna_art" },
     ],
   });
 

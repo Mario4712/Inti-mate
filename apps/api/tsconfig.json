@@ -20,5 +20,7 @@
     "paths": {
       "@intimare/database": ["../../packages/database/dist"]
     }
-  }
+  },
+  "include": ["src/**/*", "../../packages/database/src/**/*"],
+  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
 }
