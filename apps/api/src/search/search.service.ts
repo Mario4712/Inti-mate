@@ -22,7 +22,7 @@ export class SearchService {
 
   async searchCreators(dto: SearchCreatorsDto) {
     try {
-      return await this.esClient.searchCreators({
+      const esResult = await this.esClient.searchCreators({
         q:             dto.q,
         tags:          dto.tags,
         category:      dto.category,
@@ -31,6 +31,9 @@ export class SearchService {
         page:          dto.page  ?? 1,
         limit:         dto.limit ?? 20,
       });
+      // Se ES retornou resultados, usa. Se retornou 0 e o índice pode estar vazio, cai no PG
+      if (esResult.total > 0) return esResult;
+      return this.searchFallback(dto);
     } catch (err) {
       this.logger.warn("Elasticsearch indisponível, fallback para PostgreSQL:", err);
       return this.searchFallback(dto);
@@ -123,6 +126,7 @@ export class SearchService {
           userId: true, artisticName: true, bio: true,
           avatarUrl: true, tags: true, category: true,
           country: true,
+          user: { select: { username: true } },
         },
       }),
       this.prisma.userProfile.count({ where }),
@@ -132,7 +136,8 @@ export class SearchService {
       total,
       items: profiles.map((p) => ({
         id:           p.userId,
-        artisticName: p.artisticName ?? "",
+        username:     p.user.username,
+        artisticName: p.artisticName ?? p.user.username,
         bio:          p.bio          ?? "",
         tags:         (p.tags as string[]) ?? [],
         category:     (p.category as string) ?? "",

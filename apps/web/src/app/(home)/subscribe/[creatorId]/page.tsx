@@ -142,11 +142,11 @@ export default function SubscribePage() {
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-white">{plan.name}</span>
                   <span className="text-lg font-bold text-purple-400">
-                    R$ {(plan.monthlyPrice * multiplier).toFixed(2)}
+                    R$ {(Number(plan.monthlyPrice) * multiplier).toFixed(2)}
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-gray-400">{plan.description}</p>
-                <p className="mt-1 text-xs text-gray-500">R$ {plan.monthlyPrice.toFixed(2)}/mês</p>
+                <p className="mt-1 text-xs text-gray-500">R$ {Number(plan.monthlyPrice).toFixed(2)}/mês</p>
               </button>
             ))
           )}
@@ -199,7 +199,7 @@ export default function SubscribePage() {
               )}
               <div className="flex justify-between border-t border-gray-800 pt-2 font-semibold text-white">
                 <span>Total</span>
-                <span>R$ {(selected.monthlyPrice * multiplier).toFixed(2)}</span>
+                <span>R$ {(Number(selected.monthlyPrice) * multiplier).toFixed(2)}</span>
               </div>
             </div>
           )}

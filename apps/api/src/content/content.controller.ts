@@ -71,6 +71,19 @@ export class ContentController {
     );
   }
 
+  // ─── Galeria própria (criador logado) ────────────────────
+
+  @Get("my")
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Lista todos os arquivos do criador logado (todos os status)" })
+  async getMyMedia(
+    @Query("page",  new DefaultValuePipe(1),  ParseIntPipe) page:  number,
+    @Query("limit", new DefaultValuePipe(50), ParseIntPipe) limit: number,
+    @Request() req: any,
+  ) {
+    return this.contentService.getMyMedia(req.user.id, page, limit);
+  }
+
   // ─── Galeria ─────────────────────────────────────────────
 
   @Get("creator/:creatorId")

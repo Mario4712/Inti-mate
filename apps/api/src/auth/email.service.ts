@@ -42,6 +42,27 @@ export class EmailService {
     });
   }
 
+  async sendPasswordChangeConfirmation(email: string, token: string) {
+    const frontendUrl = this.config.get("app.frontendUrl");
+    const link = `${frontendUrl}/auth/confirm-password-change?token=${token}`;
+
+    await this.send({
+      to: email,
+      subject: "Confirme a alteração de senha – Inti.mate",
+      html: `
+        <h2>Confirmar alteração de senha</h2>
+        <p>Recebemos uma solicitação para alterar sua senha. Clique no botão abaixo para confirmar.</p>
+        <p>
+          <a href="${link}" style="background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">
+            Confirmar nova senha
+          </a>
+        </p>
+        <p>O link expira em <strong>30 minutos</strong>.</p>
+        <p style="color:#888;font-size:12px;">Se não solicitou esta alteração, ignore este e-mail — sua senha permanece a mesma.</p>
+      `,
+    });
+  }
+
   async sendPasswordReset(email: string, token: string) {
     const frontendUrl = this.config.get("app.frontendUrl");
     const link = `${frontendUrl}/auth/reset-password?token=${token}`;

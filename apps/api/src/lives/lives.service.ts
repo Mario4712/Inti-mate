@@ -143,19 +143,45 @@ export class LivesService {
   }
 
   async listUpcoming(creatorId?: string) {
-    const where: any = { status: { in: ["SCHEDULED", "LIVE"] } };
+    // Auto-end lives that have been running for more than 8 hours (stale)
+    await this.prisma.liveSession.updateMany({
+      where: {
+        status: "LIVE",
+        startedAt: { lt: new Date(Date.now() - 8 * 60 * 60 * 1000) },
+      },
+      data: { status: "ENDED", endedAt: new Date() },
+    });
+
+    const where: any = { status: { in: ["SCHEDULED", "LIVE", "ENDED"] } };
     if (creatorId) where.creatorId = creatorId;
 
-    return this.prisma.liveSession.findMany({
+    const sessions = await this.prisma.liveSession.findMany({
       where,
       orderBy: { scheduledAt: "asc" },
-      take: 20,
+      take: 50,
       select: {
         id: true, creatorId: true, title: true, description: true,
         status: true, scheduledAt: true, startedAt: true,
         viewerCount: true, requiresSubscription: true,
+        creator: {
+          select: {
+            id: true,
+            username: true,
+            profile: { select: { artisticName: true, avatarUrl: true } },
+          },
+        },
       },
     });
+
+    return sessions.map((s) => ({
+      ...s,
+      creator: s.creator ? {
+        id: s.creator.id,
+        username: s.creator.username,
+        artisticName: s.creator.profile?.artisticName ?? s.creator.username,
+        avatarUrl: s.creator.profile?.avatarUrl ?? null,
+      } : null,
+    }));
   }
 
   // ─── Item 31: Super Chat ──────────────────────────────────
@@ -226,7 +252,7 @@ export class LivesService {
   }
 
   async getLiveSuperChats(liveId: string) {
-    return this.prisma.superChat.findMany({
+    const chats = await this.prisma.superChat.findMany({
       where:   { liveId },
       orderBy: { createdAt: "asc" },
       select: {
@@ -234,6 +260,8 @@ export class LivesService {
         amount: true, color: true, pinnedUntil: true, createdAt: true,
       },
     });
+    // `amount` is stored in cents — convert to BRL for the frontend
+    return chats.map((c) => ({ ...c, amount: c.amount / 100 }));
   }
 
   // ─── LiveKit token (stub) ─────────────────────────────────

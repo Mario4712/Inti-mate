@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import { Upload, X, Image as ImageIcon, Video, Check, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Upload, X, Image as ImageIcon, Video, Check, Loader2, Trash2 } from "lucide-react";
 import api from "@/lib/api";
 
 const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500 MB
@@ -9,21 +9,30 @@ const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "video/mp4", "v
 
 interface UploadedMedia {
   id: string;
-  title: string;
+  title: string | null;
   type: "PHOTO" | "VIDEO";
   status: string;
   thumbnailUrl: string | null;
+  createdAt?: string;
 }
 
 export default function ContentUploadPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [uploaded, setUploaded] = useState<UploadedMedia[]>([]);
+  const [mediaList, setMediaList] = useState<UploadedMedia[]>([]);
+  const [loadingMedia, setLoadingMedia] = useState(true);
   const [error, setError] = useState("");
   const [visibility, setVisibility] = useState("SUBSCRIBERS");
   const [title, setTitle] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    api.get("/content/my")
+      .then((r) => setMediaList(r.data?.items ?? (Array.isArray(r.data) ? r.data : [])))
+      .catch(() => {})
+      .finally(() => setLoadingMedia(false));
+  }, []);
 
   const handleFiles = useCallback((newFiles: FileList | File[]) => {
     const valid = Array.from(newFiles).filter((f) => {
@@ -65,9 +74,9 @@ export default function ContentUploadPage() {
           },
         );
 
-        // Update title if provided
         if (title.trim() && data.id) {
           await api.patch(`/content/${data.id}`, { title: title.trim() });
+          data.title = title.trim();
         }
 
         results.push(data);
@@ -77,12 +86,22 @@ export default function ContentUploadPage() {
       }
     }
 
-    setUploaded((prev) => [...prev, ...results]);
+    setMediaList((prev) => [...results, ...prev]);
     setFiles([]);
     setTitle("");
     setProgress(100);
     setUploading(false);
   };
+
+  async function handleDelete(id: string) {
+    if (!confirm("Remover este arquivo?")) return;
+    try {
+      await api.delete(`/content/${id}`);
+      setMediaList((prev) => prev.filter((m) => m.id !== id));
+    } catch (err: any) {
+      setError(err?.response?.data?.message ?? "Erro ao remover arquivo");
+    }
+  }
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -195,26 +214,56 @@ export default function ContentUploadPage() {
         </button>
       )}
 
-      {/* Recently uploaded */}
-      {uploaded.length > 0 && (
-        <div className="mt-8">
-          <h2 className="text-lg font-semibold text-white">Enviados</h2>
+      {/* Media list */}
+      <div className="mt-8">
+        <h2 className="text-lg font-semibold text-white">Meus Arquivos</h2>
+        {loadingMedia ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="h-6 w-6 animate-spin text-purple-500" />
+          </div>
+        ) : mediaList.length === 0 ? (
+          <div className="mt-3 rounded-xl border border-dashed border-gray-800 py-10 text-center">
+            <p className="text-gray-500 text-sm">Nenhum arquivo enviado ainda.</p>
+          </div>
+        ) : (
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {uploaded.map((m) => (
-              <div key={m.id} className="rounded-xl border border-gray-800 bg-gray-900 p-4">
-                <div className="flex items-center gap-2">
-                  <Check size={16} className="text-green-400" />
-                  <span className="text-sm font-medium text-gray-200">{m.title || "Sem título"}</span>
+            {mediaList.map((m) => (
+              <div key={m.id} className="group rounded-xl border border-gray-800 bg-gray-900 p-4 relative">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {m.type === "VIDEO" ? (
+                      <Video size={16} className="shrink-0 text-blue-400" />
+                    ) : (
+                      <ImageIcon size={16} className="shrink-0 text-green-400" />
+                    )}
+                    <span className="text-sm font-medium text-gray-200 truncate">{m.title || "Sem título"}</span>
+                  </div>
+                  <button
+                    onClick={() => handleDelete(m.id)}
+                    className="shrink-0 rounded p-1 text-gray-600 hover:bg-red-900/30 hover:text-red-400 transition-colors"
+                    title="Remover"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
                 <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
                   <span className="rounded bg-gray-800 px-1.5 py-0.5">{m.type}</span>
-                  <span className="rounded bg-gray-800 px-1.5 py-0.5">{m.status}</span>
+                  <span className={`rounded px-1.5 py-0.5 ${
+                    m.status === "APPROVED" ? "bg-green-900/40 text-green-400"
+                    : m.status === "REJECTED" ? "bg-red-900/40 text-red-400"
+                    : "bg-gray-800 text-gray-400"
+                  }`}>{m.status === "APPROVED" ? "Aprovado" : m.status === "PENDING_REVIEW" ? "Em revisão" : m.status === "REJECTED" ? "Rejeitado" : m.status}</span>
                 </div>
+                {m.createdAt && (
+                  <p className="mt-1 text-xs text-gray-600">
+                    {new Date(m.createdAt).toLocaleDateString("pt-BR")}
+                  </p>
+                )}
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

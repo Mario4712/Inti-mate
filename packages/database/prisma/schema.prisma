@@ -160,6 +160,9 @@ model User {
   aiAvatar           AiAvatar?
   contentGenJobs     ContentGenJob[]
   fanEditSuggestions EditSuggestion[]    @relation("FanEditSuggestions")
+  liveSessions            LiveSession[]    @relation("CreatorLives")
+  creatorConversations    Conversation[]   @relation("CreatorConversations")
+  fanConversations        Conversation[]   @relation("FanConversations")
 
   @@index([email])
   @@index([username])
@@ -557,6 +560,8 @@ model Conversation {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   messages     Message[]
+  creator      User      @relation("CreatorConversations", fields: [creatorId], references: [id])
+  fan          User      @relation("FanConversations", fields: [fanId], references: [id])
 
   @@unique([creatorId, fanId])
   @@index([creatorId])
@@ -801,6 +806,7 @@ model LiveSession {
   recordingConsentAt  DateTime?
   recordingUrl        String?
 
+  creator     User        @relation("CreatorLives", fields: [creatorId], references: [id])
   superChats  SuperChat[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt

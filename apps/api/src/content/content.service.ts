@@ -71,6 +71,11 @@ export class ContentService {
       },
     });
 
+    // Cria revisão de custódia dupla APÓS Media existir (evita FK violation)
+    if (modResult.needsCustodyReview) {
+      await this.moderation.createCustodyReviewForMedia(media.id);
+    }
+
     // 2. Processa e faz upload em background (não bloqueia a resposta)
     this.processAndStore(media.id, creatorId, buffer, mimeType, isImage).catch(
       (err) => this.logger.error(`Erro no processamento de ${media.id}:`, err),
@@ -181,6 +186,23 @@ export class ContentService {
       hasAccess,
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     };
+  }
+
+  async getMyMedia(creatorId: string, page = 1, limit = 50) {
+    const skip = (page - 1) * limit;
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.media.findMany({
+        where: { creatorId },
+        select: {
+          id: true, type: true, visibility: true, status: true,
+          thumbnailUrl: true, title: true, createdAt: true,
+        },
+        skip, take: limit,
+        orderBy: { createdAt: "desc" },
+      }),
+      this.prisma.media.count({ where: { creatorId } }),
+    ]);
+    return { items, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
   }
 
   async getMediaItem(

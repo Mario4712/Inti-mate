@@ -53,7 +53,12 @@ function LoginForm() {
       // Set session flag cookie for middleware (httpOnly: false, same-site)
       document.cookie = "has_session=1; path=/; max-age=604800; samesite=lax";
 
-      router.push(redirect);
+      // Role-based redirect: creators go to dashboard, fans go to feed
+      if (redirect !== "/dashboard") {
+        router.push(redirect);
+      } else {
+        router.push(result.role === "CREATOR" ? "/dashboard" : "/feed");
+      }
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? "Credenciais inválidas";
       setServerError(Array.isArray(msg) ? msg.join(", ") : msg);

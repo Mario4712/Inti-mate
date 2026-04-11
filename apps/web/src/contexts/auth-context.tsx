@@ -34,7 +34,7 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
-  login: (email: string, password: string, totpCode?: string) => Promise<{ requiresTwoFactor?: boolean }>;
+  login: (email: string, password: string, totpCode?: string) => Promise<{ requiresTwoFactor?: boolean; role?: string }>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: me } = await authApi.me();
       setUser(me);
 
-      return {};
+      return { role: me.role };
     },
     [],
   );

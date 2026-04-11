@@ -17,7 +17,8 @@ interface PersonaInfo {
 }
 
 export default function AiChatPage() {
-  const { creatorId } = useParams<{ creatorId: string }>();
+  const { username } = useParams<{ username: string }>();
+  const creatorId = username;
   const router = useRouter();
   const [persona, setPersona] = useState<PersonaInfo | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);

@@ -8,9 +8,12 @@ import {
   Param,
   Patch,
   Post,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { UsersService } from "./users.service";
 import { KycService } from "./kyc.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
@@ -64,6 +67,34 @@ export class UsersController {
     @Body() dto: UpdateProfileDto,
   ) {
     return this.usersService.updateProfile(userId, dto);
+  }
+
+  // ─── Upload avatar / capa ────────────────────────────────
+
+  @Post("me/avatar")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: 5 * 1024 * 1024 } }))
+  @ApiConsumes("multipart/form-data")
+  @ApiOperation({ summary: "Atualizar foto de perfil" })
+  uploadAvatar(
+    @CurrentUser("id") userId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.usersService.uploadAvatar(userId, file);
+  }
+
+  @Post("me/cover")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: 10 * 1024 * 1024 } }))
+  @ApiConsumes("multipart/form-data")
+  @ApiOperation({ summary: "Atualizar foto de capa / banner" })
+  uploadCover(
+    @CurrentUser("id") userId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.usersService.uploadCover(userId, file);
   }
 
   // ─── KYC ─────────────────────────────────────────────────

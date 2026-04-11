@@ -31,7 +31,7 @@ type FormValues = z.infer<typeof schema>;
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
   const [serverError, setServerError] = useState("");
 
   const {
@@ -46,8 +46,8 @@ export default function RegisterPage() {
   async function onSubmit(values: FormValues) {
     setServerError("");
     try {
-      await authApi.register(values);
-      setSuccess(true);
+      const res = await authApi.register(values);
+      setSuccessMsg(res.data?.message ?? "Cadastro realizado.");
     } catch (err: any) {
       const msg =
         err?.response?.data?.message ?? "Erro ao criar conta. Tente novamente.";
@@ -55,16 +55,24 @@ export default function RegisterPage() {
     }
   }
 
-  if (success) {
+  const isAutoVerified = successMsg.includes("automaticamente");
+
+  if (successMsg) {
     return (
       <div className="card text-center">
-        <div className="w-16 h-16 rounded-full bg-green-900/30 border border-green-700 flex items-center justify-center mx-auto mb-4">
-          <span className="text-2xl">✉️</span>
+        <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isAutoVerified ? "bg-green-900/30 border border-green-700" : "bg-blue-900/30 border border-blue-700"}`}>
+          <span className="text-2xl">{isAutoVerified ? "✅" : "✉️"}</span>
         </div>
-        <h2 className="text-xl font-bold text-white mb-2">Verifique seu e-mail</h2>
-        <p className="text-gray-400 text-sm">
-          Enviamos um link de confirmação para o e-mail cadastrado. O link expira em 1 hora.
-        </p>
+        <h2 className="text-xl font-bold text-white mb-2">
+          {isAutoVerified ? "Conta criada com sucesso!" : "Verifique seu e-mail"}
+        </h2>
+        <p className="text-gray-400 text-sm mb-6">{successMsg}</p>
+        <a
+          href="/login"
+          className="btn-primary inline-block w-full"
+        >
+          Fazer login
+        </a>
       </div>
     );
   }

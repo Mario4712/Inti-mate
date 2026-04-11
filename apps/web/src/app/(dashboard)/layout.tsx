@@ -6,9 +6,12 @@ import { useAuth } from "@/contexts/auth-context";
 import {
   BarChart3,
   CreditCard,
+  ExternalLink,
   Home,
   LayoutDashboard,
   LogOut,
+  MessageCircle,
+  PackageOpen,
   Settings,
   Upload,
   Users,
@@ -18,10 +21,12 @@ import {
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Visão Geral", icon: LayoutDashboard },
   { href: "/dashboard/content", label: "Conteúdo", icon: Upload },
+  { href: "/dashboard/plans", label: "Planos", icon: PackageOpen },
   { href: "/dashboard/subscribers", label: "Assinantes", icon: Users },
   { href: "/creator/earnings", label: "Receita", icon: CreditCard },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/dashboard/lives", label: "Lives", icon: Video },
+  { href: "/messages", label: "Mensagens", icon: MessageCircle },
   { href: "/dashboard/settings", label: "Configurações", icon: Settings },
 ];
 
@@ -46,6 +51,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return null;
   }
 
+  // Only creators can access the dashboard
+  if (user?.role !== "CREATOR") {
+    if (typeof window !== "undefined") router.push("/feed");
+    return null;
+  }
+
   return (
     <div className="flex min-h-screen bg-gray-950">
       {/* Sidebar — hidden on mobile, shown on md+ */}
@@ -53,7 +64,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="flex h-full flex-col">
           {/* Logo */}
           <div className="flex h-16 items-center gap-2 border-b border-gray-800 px-6">
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/dashboard" className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-600">
                 <span className="text-sm font-bold text-white">I</span>
               </div>
@@ -84,6 +95,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             })}
           </nav>
 
+          {/* Back to feed */}
+          <div className="px-3 pb-2">
+            <Link
+              href="/feed"
+              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-500 transition-colors hover:bg-gray-800 hover:text-gray-300"
+            >
+              <ExternalLink size={15} />
+              Ver como fã
+            </Link>
+          </div>
+
           {/* User section */}
           <div className="border-t border-gray-800 p-4">
             <div className="flex items-center gap-3">
@@ -113,7 +135,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Mobile top bar */}
       <div className="flex flex-1 flex-col">
         <header className="flex h-14 items-center justify-between border-b border-gray-800 bg-gray-900 px-4 md:hidden">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/dashboard" className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-600">
               <span className="text-xs font-bold text-white">I</span>
             </div>
@@ -121,13 +143,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               Inti<span className="text-purple-400">.mate</span>
             </span>
           </Link>
-          <button
-            onClick={logout}
-            className="rounded-lg p-2 text-gray-400 hover:text-gray-200"
-            title="Sair"
-          >
-            <LogOut size={18} />
-          </button>
+          <div className="flex items-center gap-1">
+            <Link href="/feed" className="rounded-lg p-2 text-gray-400 hover:text-gray-200" title="Ver como fã">
+              <Home size={18} />
+            </Link>
+            <button
+              onClick={logout}
+              className="rounded-lg p-2 text-gray-400 hover:text-gray-200"
+              title="Sair"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
         </header>
 
         {/* Mobile bottom nav */}

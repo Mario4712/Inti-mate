@@ -43,6 +43,7 @@ export default function LivesPage() {
 
   const live = lives.filter((l) => l.status === "LIVE");
   const scheduled = lives.filter((l) => l.status === "SCHEDULED");
+  const ended = lives.filter((l) => l.status === "ENDED");
 
   return (
     <div className="space-y-8">
@@ -78,6 +79,18 @@ export default function LivesPage() {
           </div>
         </section>
       )}
+
+      {ended.length > 0 && (
+        <section>
+          <div className="mb-4 flex items-center gap-2">
+            <Radio size={18} className="text-gray-500" />
+            <h2 className="text-lg font-semibold text-white">Encerradas</h2>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {ended.map((l) => <LiveCard key={l.id} live={l} />)}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
@@ -91,7 +104,7 @@ function LiveCard({ live }: { live: LiveSession }) {
     >
       {/* Thumbnail area */}
       <div className="relative aspect-video w-full bg-gray-800 flex items-center justify-center">
-        {live.creator.avatarUrl ? (
+        {live.creator?.avatarUrl ? (
           <Image src={live.creator.avatarUrl} alt="" fill className="object-cover opacity-30" />
         ) : null}
         <div className="relative z-10 flex flex-col items-center gap-2">
@@ -100,6 +113,8 @@ function LiveCard({ live }: { live: LiveSession }) {
               <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
               AO VIVO
             </span>
+          ) : live.status === "ENDED" ? (
+            <span className="rounded-full bg-gray-800 px-3 py-1 text-xs text-gray-400">Encerrada</span>
           ) : (
             <span className="rounded-full bg-gray-700 px-3 py-1 text-xs text-gray-300">Agendada</span>
           )}
@@ -116,18 +131,20 @@ function LiveCard({ live }: { live: LiveSession }) {
         <p className="mb-2 font-semibold text-white line-clamp-1 group-hover:text-purple-300">
           {live.title}
         </p>
-        <div className="flex items-center gap-2">
-          <div className="relative h-6 w-6 overflow-hidden rounded-full bg-gray-700 shrink-0">
-            {live.creator.avatarUrl ? (
-              <Image src={live.creator.avatarUrl} alt="" fill className="object-cover" />
-            ) : (
-              <span className="flex h-full w-full items-center justify-center text-xs font-bold text-gray-400">
-                {live.creator.artisticName.charAt(0)}
-              </span>
-            )}
+        {live.creator && (
+          <div className="flex items-center gap-2">
+            <div className="relative h-6 w-6 overflow-hidden rounded-full bg-gray-700 shrink-0">
+              {live.creator.avatarUrl ? (
+                <Image src={live.creator.avatarUrl} alt="" fill className="object-cover" />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center text-xs font-bold text-gray-400">
+                  {live.creator.artisticName?.charAt(0) ?? "?"}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-gray-400 truncate">{live.creator.artisticName}</p>
           </div>
-          <p className="text-xs text-gray-400 truncate">{live.creator.artisticName}</p>
-        </div>
+        )}
         <div className="mt-2 flex items-center justify-between text-xs text-gray-600">
           {isLive ? (
             <span className="flex items-center gap-1"><Users size={11} /> {live.viewerCount} ao vivo</span>

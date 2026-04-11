@@ -35,14 +35,49 @@ export class MessagesService {
           take: 1,
           select: { id: true, body: true, createdAt: true, status: true, senderId: true },
         },
+        creator: {
+          select: {
+            id: true, username: true,
+            profile: { select: { artisticName: true, avatarUrl: true } },
+          },
+        },
+        fan: {
+          select: {
+            id: true, username: true,
+            profile: { select: { artisticName: true, avatarUrl: true } },
+          },
+        },
       },
     });
 
+    const unread = await this.prisma.message.groupBy({
+      by: ["conversationId"],
+      where: {
+        conversation: { OR: [{ creatorId: userId }, { fanId: userId }] },
+        senderId: { not: userId },
+        status: { not: "READ" },
+      },
+      _count: true,
+    });
+    const unreadMap = new Map(unread.map((u) => [u.conversationId, u._count]));
+
     return conversations.map((c) => ({
-      id:          c.id,
-      updatedAt:   c.updatedAt,
-      otherId:     c.creatorId === userId ? c.fanId : c.creatorId,
+      id:        c.id,
+      updatedAt: c.updatedAt,
+      creator: {
+        id:           c.creator.id,
+        username:     c.creator.username,
+        artisticName: c.creator.profile?.artisticName ?? c.creator.username,
+        avatarUrl:    c.creator.profile?.avatarUrl    ?? null,
+      },
+      fan: {
+        id:           c.fan.id,
+        username:     c.fan.username,
+        artisticName: c.fan.profile?.artisticName ?? c.fan.username,
+        avatarUrl:    c.fan.profile?.avatarUrl    ?? null,
+      },
       lastMessage: c.messages[0] ?? null,
+      unreadCount: unreadMap.get(c.id) ?? 0,
     }));
   }
 
@@ -53,6 +88,20 @@ export class MessagesService {
       where: {
         id: conversationId,
         OR: [{ creatorId: userId }, { fanId: userId }],
+      },
+      include: {
+        creator: {
+          select: {
+            id: true, username: true,
+            profile: { select: { artisticName: true, avatarUrl: true } },
+          },
+        },
+        fan: {
+          select: {
+            id: true, username: true,
+            profile: { select: { artisticName: true, avatarUrl: true } },
+          },
+        },
       },
     });
     if (!conv) throw new NotFoundException("Conversa não encontrada");
@@ -74,13 +123,31 @@ export class MessagesService {
     // Marca mensagens recebidas como READ em background
     this.markRead(conversationId, userId).catch(() => {});
 
-    // Para mensagens pagas do destinatário, oculta o conteúdo se não foi desbloqueado
-    return messages.reverse().map((m) => {
+    const mappedMessages = messages.map((m) => {
       if (m.pricePaid && m.pricePaid > 0 && m.senderId !== userId) {
         return { ...m, body: "", mediaUrl: null, locked: true };
       }
       return { ...m, locked: false };
     });
+
+    return {
+      conversation: {
+        id:      conv.id,
+        creator: {
+          id:           conv.creator.id,
+          username:     conv.creator.username,
+          artisticName: conv.creator.profile?.artisticName ?? conv.creator.username,
+          avatarUrl:    conv.creator.profile?.avatarUrl    ?? null,
+        },
+        fan: {
+          id:           conv.fan.id,
+          username:     conv.fan.username,
+          artisticName: conv.fan.profile?.artisticName ?? conv.fan.username,
+          avatarUrl:    conv.fan.profile?.avatarUrl    ?? null,
+        },
+      },
+      messages: mappedMessages,
+    };
   }
 
   async sendMessage(senderId: string, dto: SendMessageDto) {

@@ -1,6 +1,22 @@
+"use client";
+
 import Link from "next/link";
+import { useAuth } from "@/contexts/auth-context";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function HomePage() {
+  const { isAuthenticated, isLoading, user } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace(user?.role === "CREATOR" ? "/dashboard" : "/feed");
+    }
+  }, [isAuthenticated, isLoading, user, router]);
+
+  if (isLoading || isAuthenticated) return null;
+
   return (
     <div className="flex min-h-screen flex-col">
       {/* Hero */}
@@ -29,7 +45,7 @@ export default function HomePage() {
           <Link href="/register" className="btn-primary px-8 py-3 text-base">
             Comece agora
           </Link>
-          <Link href="/search" className="btn-secondary px-8 py-3 text-base">
+          <Link href="/discover" className="btn-secondary px-8 py-3 text-base">
             Explorar criadores
           </Link>
         </div>

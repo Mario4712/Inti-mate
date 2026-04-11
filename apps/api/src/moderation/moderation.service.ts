@@ -36,7 +36,7 @@ export class ModerationService {
     contentType: ContentType,
     uploaderId: string,
     contentId: string,
-  ): Promise<{ approved: boolean; requiresReview: boolean; reason?: string }> {
+  ): Promise<{ approved: boolean; requiresReview: boolean; needsCustodyReview: boolean; reason?: string }> {
     // 1. Validação de tipo e tamanho
     this.validateFile(buffer, mimeType, contentType);
 
@@ -47,7 +47,7 @@ export class ModerationService {
       // Reporte imediato às autoridades
       await this.csamService.reportDetection(contentId, contentType, scanResult.hash, undefined);
 
-      // Registra moderação
+      // Registra moderação (ModerationLog.contentId não tem FK — pode criar antes do Media)
       await this.prisma.moderationLog.create({
         data: {
           contentId,
@@ -66,7 +66,7 @@ export class ModerationService {
     }
 
     if (scanResult.isFlagged) {
-      // Conteúdo suspeito → enfileira para revisão humana, não aprova automaticamente
+      // Conteúdo suspeito → log de moderação; custódia criada após Media ser persistido
       await this.prisma.moderationLog.create({
         data: {
           contentId,
@@ -77,14 +77,11 @@ export class ModerationService {
         },
       });
 
-      // Cria registro de custódia dupla obrigatória
-      await this.dualCustody.createReview(contentId);
-
-      return { approved: false, requiresReview: true };
+      // needsCustodyReview=true → ContentService cria ContentCustodyReview após media.create()
+      return { approved: false, requiresReview: true, needsCustodyReview: true };
     }
 
     // 3. Passou no CSAM scan → dupla custódia para todo conteúdo
-    // Conteúdo fica PENDING_REVIEW até 2 moderadores aprovarem
     await this.prisma.moderationLog.create({
       data: {
         contentId,
@@ -95,10 +92,16 @@ export class ModerationService {
       },
     });
 
-    // Todo conteúdo passa por dupla custódia antes de ficar disponível
-    await this.dualCustody.createReview(contentId);
+    // needsCustodyReview=true → ContentService cria ContentCustodyReview após media.create()
+    return { approved: false, requiresReview: true, needsCustodyReview: true };
+  }
 
-    return { approved: false, requiresReview: true };
+  /**
+   * Cria o registro de custódia dupla para um conteúdo já persistido no banco.
+   * DEVE ser chamado após Media.create() para evitar FK violation.
+   */
+  async createCustodyReviewForMedia(mediaId: string): Promise<void> {
+    await this.dualCustody.createReview(mediaId);
   }
 
   /**

@@ -55,3 +55,22 @@ export class VerifyTotpDto {
   @IsString()
   code: string;
 }
+
+export class RequestPasswordChangeDto {
+  @ApiProperty({ description: "Senha atual para confirmar identidade" })
+  @IsString()
+  @MinLength(1)
+  currentPassword: string;
+}
+
+export class ConfirmPasswordChangeDto {
+  @ApiProperty({ description: "Token recebido por e-mail" })
+  @IsString()
+  token: string;
+
+  @ApiProperty({ description: "Nova senha" })
+  @IsString()
+  @MinLength(8)
+  @MaxLength(72)
+  newPassword: string;
+}

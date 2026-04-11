@@ -27,6 +27,7 @@ interface DashboardData {
     type: string;
     viewCount: number;
   }>;
+  activityHours?: Array<{ hour: number; views: number }>;
 }
 
 export default function AnalyticsPage() {
@@ -90,20 +91,40 @@ export default function AnalyticsPage() {
         />
       </div>
 
-      {/* Revenue by type */}
+      {/* Revenue by type — bar chart */}
       {revenue?.byType && revenue.byType.length > 0 && (
         <div className="mt-8 rounded-xl border border-gray-800 bg-gray-900 p-6">
-          <h2 className="text-lg font-semibold text-white">Receita por Tipo</h2>
-          <div className="mt-4 space-y-3">
-            {revenue.byType.map((t) => (
-              <div key={t.type} className="flex items-center justify-between">
-                <span className="text-sm text-gray-400">{formatType(t.type)}</span>
-                <span className="font-medium text-white">
-                  R$ {(t.amount / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-            ))}
-          </div>
+          <h2 className="text-lg font-semibold text-white">Receita por Tipo (30d)</h2>
+          <BarChart
+            data={revenue.byType.map((t) => ({
+              label: formatType(t.type),
+              value: t.amount / 100,
+            }))}
+            formatValue={(v) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
+            color="#a855f7"
+          />
+        </div>
+      )}
+
+      {/* Activity heatmap by hour */}
+      {data?.activityHours && data.activityHours.length > 0 && (
+        <div className="mt-6 rounded-xl border border-gray-800 bg-gray-900 p-6">
+          <h2 className="text-lg font-semibold text-white">Atividade por Hora do Dia</h2>
+          <p className="mt-0.5 text-xs text-gray-500">Quantidade de conteúdos aprovados por hora (UTC)</p>
+          <HourHeatmap data={data.activityHours} />
+        </div>
+      )}
+
+      {/* Comparison card: this month vs last */}
+      {revenue && (revenue.last30Days > 0 || revenue.prev30Days > 0) && (
+        <div className="mt-6 rounded-xl border border-gray-800 bg-gray-900 p-6">
+          <h2 className="text-lg font-semibold text-white">Comparativo de Receita</h2>
+          <ComparisonBar
+            current={revenue.last30Days / 100}
+            previous={revenue.prev30Days / 100}
+            currentLabel="Últimos 30 dias"
+            previousLabel="30 dias anteriores"
+          />
         </div>
       )}
 
@@ -117,11 +138,18 @@ export default function AnalyticsPage() {
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-800 text-xs font-bold text-gray-400">
                   {i + 1}
                 </span>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-200">{c.title || "Sem título"}</p>
-                  <p className="text-xs text-gray-500">{c.type}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-200 truncate">{c.title || "Sem título"}</p>
+                  <div className="mt-1 h-1.5 w-full rounded-full bg-gray-800 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-purple-500"
+                      style={{
+                        width: `${Math.round((c.viewCount / (data.topContent[0]?.viewCount || 1)) * 100)}%`,
+                      }}
+                    />
+                  </div>
                 </div>
-                <span className="text-sm text-gray-400">{c.viewCount.toLocaleString("pt-BR")} views</span>
+                <span className="shrink-0 text-sm text-gray-400">{c.viewCount.toLocaleString("pt-BR")} views</span>
               </div>
             ))}
           </div>
@@ -180,4 +208,124 @@ function formatType(type: string) {
     DIGITAL_ITEM: "Itens Digitais",
   };
   return map[type] ?? type;
+}
+
+// ─── Chart components ────────────────────────────────────────
+
+function BarChart({
+  data,
+  formatValue,
+  color,
+}: {
+  data: Array<{ label: string; value: number }>;
+  formatValue: (v: number) => string;
+  color: string;
+}) {
+  const max = Math.max(...data.map((d) => d.value), 1);
+  return (
+    <div className="mt-4 space-y-3">
+      {data.map((d) => (
+        <div key={d.label}>
+          <div className="mb-1 flex items-center justify-between text-xs">
+            <span className="text-gray-400">{d.label}</span>
+            <span className="font-medium text-gray-200">{formatValue(d.value)}</span>
+          </div>
+          <div className="h-2 w-full rounded-full bg-gray-800 overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${(d.value / max) * 100}%`, backgroundColor: color }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function HourHeatmap({ data }: { data: Array<{ hour: number; views: number }> }) {
+  const byHour = Array.from({ length: 24 }, (_, h) => {
+    const found = data.find((d) => d.hour === h);
+    return { hour: h, views: found?.views ?? 0 };
+  });
+  const max = Math.max(...byHour.map((d) => d.views), 1);
+
+  return (
+    <div className="mt-4">
+      <div className="flex items-end gap-1 h-20">
+        {byHour.map(({ hour, views }) => (
+          <div key={hour} className="relative flex-1 flex flex-col items-center justify-end group">
+            <div
+              className="w-full rounded-t transition-all duration-300"
+              style={{
+                height: `${Math.max((views / max) * 64, views > 0 ? 4 : 0)}px`,
+                backgroundColor: views > 0 ? "#a855f7" : "#1f2937",
+                opacity: views > 0 ? 0.4 + (views / max) * 0.6 : 1,
+              }}
+            />
+            <div className="absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center justify-center rounded bg-gray-800 px-1.5 py-0.5 text-xs text-gray-200 whitespace-nowrap z-10">
+              {hour}h: {views}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-1 flex justify-between text-xs text-gray-600">
+        <span>0h</span>
+        <span>6h</span>
+        <span>12h</span>
+        <span>18h</span>
+        <span>23h</span>
+      </div>
+    </div>
+  );
+}
+
+function ComparisonBar({
+  current,
+  previous,
+  currentLabel,
+  previousLabel,
+}: {
+  current: number;
+  previous: number;
+  currentLabel: string;
+  previousLabel: string;
+}) {
+  const max = Math.max(current, previous, 1);
+  const fmt = (v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+  const diff = current - previous;
+  const diffPct = previous > 0 ? Math.round((diff / previous) * 100) : null;
+
+  return (
+    <div className="mt-4 space-y-3">
+      <div>
+        <div className="mb-1 flex items-center justify-between text-xs">
+          <span className="text-purple-400 font-medium">{currentLabel}</span>
+          <span className="font-bold text-white">{fmt(current)}</span>
+        </div>
+        <div className="h-3 w-full rounded-full bg-gray-800 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-purple-500 transition-all duration-500"
+            style={{ width: `${(current / max) * 100}%` }}
+          />
+        </div>
+      </div>
+      <div>
+        <div className="mb-1 flex items-center justify-between text-xs">
+          <span className="text-gray-400">{previousLabel}</span>
+          <span className="text-gray-400">{fmt(previous)}</span>
+        </div>
+        <div className="h-3 w-full rounded-full bg-gray-800 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gray-600 transition-all duration-500"
+            style={{ width: `${(previous / max) * 100}%` }}
+          />
+        </div>
+      </div>
+      {diffPct !== null && (
+        <p className={`text-sm font-medium ${diff >= 0 ? "text-green-400" : "text-red-400"}`}>
+          {diff >= 0 ? "▲" : "▼"} {Math.abs(diffPct)}% em relação ao período anterior
+        </p>
+      )}
+    </div>
+  );
 }

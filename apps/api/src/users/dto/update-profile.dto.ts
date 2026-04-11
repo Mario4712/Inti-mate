@@ -4,7 +4,6 @@ import {
   IsString,
   MaxLength,
   MinLength,
-  Matches,
 } from "class-validator";
 import { ApiPropertyOptional } from "@nestjs/swagger";
 
@@ -14,9 +13,6 @@ export class UpdateProfileDto {
   @IsString()
   @MinLength(3)
   @MaxLength(50)
-  @Matches(/^[a-zA-Z0-9._-]+$/, {
-    message: "Nome artístico só pode conter letras, números, ponto, underscore e hífen",
-  })
   artisticName?: string;
 
   @ApiPropertyOptional()

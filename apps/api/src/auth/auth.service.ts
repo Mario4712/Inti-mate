@@ -123,13 +123,24 @@ export class AuthService {
       return newUser;
     });
 
-    // Envia e-mail de verificação
-    await this.sendEmailVerification(user.id, user.email);
+    // Em desenvolvimento, auto-verifica o e-mail para facilitar testes
+    if (process.env.NODE_ENV !== "production") {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { emailVerified: true, status: "ACTIVE" },
+      });
+      this.logger.warn(`[DEV] E-mail auto-verificado para ${user.email}`);
+    } else {
+      await this.sendEmailVerification(user.id, user.email);
+    }
 
     this.logger.log(`Novo usuário registrado: ${user.id} (${user.role})`);
 
     return {
-      message: "Cadastro realizado. Verifique seu e-mail para ativar a conta.",
+      message:
+        process.env.NODE_ENV !== "production"
+          ? "Cadastro realizado. Conta ativada automaticamente (modo desenvolvimento)."
+          : "Cadastro realizado. Verifique seu e-mail para ativar a conta.",
       userId: user.id,
     };
   }
@@ -345,6 +356,52 @@ export class AuthService {
     });
 
     return { message: "2FA desabilitado" };
+  }
+
+  // ─── Change Password (autenticado) ───────────────────────
+
+  async requestPasswordChange(userId: string, currentPassword: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) throw new BadRequestException("Senha atual incorreta");
+
+    // Invalida tokens anteriores do mesmo tipo
+    await this.prisma.emailVerificationToken.updateMany({
+      where: { userId, type: "password_change", usedAt: null },
+      data: { usedAt: new Date() },
+    });
+
+    const token = uuidv4();
+    await this.prisma.emailVerificationToken.create({
+      data: {
+        userId,
+        token,
+        type: "password_change",
+        expiresAt: addMinutes(new Date(), 30),
+      },
+    });
+
+    await this.emailService.sendPasswordChangeConfirmation(user.email, token);
+
+    return { message: "Enviamos um e-mail de confirmação. Confirme para concluir a alteração." };
+  }
+
+  async confirmPasswordChange(token: string, newPassword: string) {
+    const record = await this.prisma.emailVerificationToken.findUnique({ where: { token } });
+
+    if (!record || record.usedAt || record.expiresAt < new Date() || record.type !== "password_change") {
+      throw new BadRequestException("Token inválido ou expirado");
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, this.BCRYPT_ROUNDS);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: record.userId }, data: { passwordHash } }),
+      this.prisma.emailVerificationToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
+    ]);
+
+    return { message: "Senha alterada com sucesso" };
   }
 
   // ─── Forgot / Reset Password ──────────────────────────────

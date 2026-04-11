@@ -20,9 +20,11 @@ import { Throttle } from "@nestjs/throttler";
 import { AuthService } from "./auth.service";
 import { GoogleStrategy } from "./strategies/google.strategy";
 import {
+  ConfirmPasswordChangeDto,
   ForgotPasswordDto,
   LoginDto,
   RefreshTokenDto,
+  RequestPasswordChangeDto,
   ResetPasswordDto,
   VerifyEmailDto,
   VerifyTotpDto,
@@ -141,6 +143,28 @@ export class AuthController {
     @Body() dto: VerifyTotpDto,
   ) {
     return this.authService.disableTwoFactor(user.id, dto.code);
+  }
+
+  // ─── Change password (autenticado, requer confirmação por e-mail) ─
+
+  @Post("change-password/request")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Throttle({ auth: { limit: 3, ttl: 60_000 } })
+  @ApiOperation({ summary: "Solicitar troca de senha (envia e-mail de confirmação)" })
+  requestPasswordChange(
+    @Body() dto: RequestPasswordChangeDto,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.authService.requestPasswordChange(user.id, dto.currentPassword);
+  }
+
+  @Post("change-password/confirm")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Confirmar nova senha com token do e-mail" })
+  confirmPasswordChange(@Body() dto: ConfirmPasswordChangeDto) {
+    return this.authService.confirmPasswordChange(dto.token, dto.newPassword);
   }
 
   // ─── Forgot / Reset password ──────────────────────────────

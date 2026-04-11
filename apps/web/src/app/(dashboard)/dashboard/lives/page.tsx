@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Radio, Plus, Users, Calendar, ExternalLink } from "lucide-react";
+import { Radio, Plus, Users, Calendar, ExternalLink, StopCircle } from "lucide-react";
 import api from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
 
 interface Live {
   id: string;
@@ -15,6 +16,7 @@ interface Live {
 }
 
 export default function LivesPage() {
+  const { user } = useAuth();
   const [lives, setLives] = useState<Live[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -22,14 +24,29 @@ export default function LivesPage() {
   const [title, setTitle] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
   const [creating, setCreating] = useState(false);
+  const [endingId, setEndingId] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!user?.id) return;
     api
-      .get("/lives")
-      .then((r) => setLives(r.data?.lives ?? r.data ?? []))
+      .get(`/lives/creator/${user.id}`)
+      .then((r) => setLives(Array.isArray(r.data) ? r.data : r.data?.lives ?? []))
       .catch(() => setError("Não foi possível carregar as lives"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [user?.id]);
+
+  async function endLive(id: string) {
+    if (!confirm("Encerrar esta live?")) return;
+    setEndingId(id);
+    try {
+      await api.patch(`/lives/${id}/end`);
+      setLives((prev) => prev.map((l) => l.id === id ? { ...l, status: "ENDED" } : l));
+    } catch (e: any) {
+      setError(e?.response?.data?.message ?? "Erro ao encerrar live");
+    } finally {
+      setEndingId(null);
+    }
+  }
 
   async function createLive() {
     if (!title.trim()) return;
@@ -153,15 +170,27 @@ export default function LivesPage() {
                     </span>
                   )}
                 </div>
-                {live.status === "LIVE" && (
-                  <a
-                    href={`/watch/${live.id}`}
-                    className="mt-3 flex items-center gap-1 text-xs font-medium text-purple-400 hover:text-purple-300"
-                  >
-                    <ExternalLink size={12} />
-                    Assistir ao vivo
-                  </a>
-                )}
+                <div className="mt-3 flex items-center gap-3 flex-wrap">
+                  {live.status === "LIVE" && (
+                    <a
+                      href={`/lives/${live.id}`}
+                      className="flex items-center gap-1 text-xs font-medium text-purple-400 hover:text-purple-300"
+                    >
+                      <ExternalLink size={12} />
+                      Assistir ao vivo
+                    </a>
+                  )}
+                  {live.status === "LIVE" && (
+                    <button
+                      onClick={() => endLive(live.id)}
+                      disabled={endingId === live.id}
+                      className="flex items-center gap-1 text-xs font-medium text-red-400 hover:text-red-300 disabled:opacity-50"
+                    >
+                      <StopCircle size={12} />
+                      {endingId === live.id ? "Encerrando..." : "Encerrar live"}
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

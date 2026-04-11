@@ -53,21 +53,20 @@ import appConfig from "./config/app.config";
     ConfigModule.forRoot({
       isGlobal: true,
       load: [appConfig],
-      envFilePath: [".env.local", ".env"],
+      envFilePath: [".env.local", ".env", "../../.env.local", "../../.env"],
     }),
 
-    // Rate limiting global: 100 req / 60s por IP
+    // Rate limiting global (relaxado em dev para facilitar testes)
     ThrottlerModule.forRoot([
       {
         name: "global",
         ttl: 60_000,
-        limit: 100,
+        limit: process.env.NODE_ENV === "production" ? 100 : 500,
       },
-      // Limite mais restrito para auth: 10 req / 60s
       {
         name: "auth",
         ttl: 60_000,
-        limit: 10,
+        limit: process.env.NODE_ENV === "production" ? 10 : 60,
       },
     ]),
 

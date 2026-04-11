@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Put, Param, Body, Query,
-  UseGuards, Request, ParseIntPipe, DefaultValuePipe,
+  UseGuards, Request, ParseIntPipe, DefaultValuePipe, NotFoundException,
 } from "@nestjs/common";
 import { ApiTags, ApiBearerAuth, ApiOperation } from "@nestjs/swagger";
 import {
@@ -10,6 +10,7 @@ import {
 import { Type } from "class-transformer";
 import { AiPersonaService } from "./ai-persona.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { PrismaService } from "../common/database/prisma.service";
 
 class FaqEntryDto {
   @IsString() @MaxLength(200) q: string;
@@ -40,7 +41,10 @@ class ReplyDto {
 @UseGuards(JwtAuthGuard)
 @Controller("ai-persona")
 export class AiPersonaController {
-  constructor(private readonly service: AiPersonaService) {}
+  constructor(
+    private readonly service: AiPersonaService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Put("creator/config")
   @ApiOperation({ summary: "Criador: configura ou atualiza a IA persona" })
@@ -64,23 +68,27 @@ export class AiPersonaController {
     return this.service.getPersonaHistory(req.user.id, page, limit);
   }
 
-  @Get(":creatorId/info")
+  @Get(":username/info")
   @ApiOperation({ summary: "Verifica se um criador tem IA persona ativa (sem expor configuração)" })
-  async info(@Param("creatorId") creatorId: string) {
-    const p = await this.service.getPersona(creatorId);
+  async info(@Param("username") username: string) {
+    const user = await this.prisma.user.findUnique({ where: { username } });
+    if (!user) return { enabled: false, displayName: null };
+    const p = await this.service.getPersona(user.id);
     return { enabled: p?.enabled ?? false, displayName: p?.displayName ?? null };
   }
 
-  @Post(":creatorId/reply")
+  @Post(":username/reply")
   @ApiOperation({
     summary: "Fã: envia mensagem para a IA persona do criador",
     description: "A resposta é sempre identificada como IA. Limite: 50 mensagens/dia por usuário.",
   })
-  reply(
-    @Param("creatorId") creatorId: string,
+  async reply(
+    @Param("username") username: string,
     @Body() dto: ReplyDto,
     @Request() req: any,
   ) {
-    return this.service.replyAsPersona(creatorId, req.user.id, dto.message);
+    const user = await this.prisma.user.findUnique({ where: { username } });
+    if (!user) throw new NotFoundException("Criador não encontrado");
+    return this.service.replyAsPersona(user.id, req.user.id, dto.message);
   }
 }

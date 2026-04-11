@@ -6,11 +6,15 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../common/database/prisma.service";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
+import { StorageService } from "../content/storage.service";
 import { addDays } from "date-fns";
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private storage: StorageService,
+  ) {}
 
   // ─── Perfil público ──────────────────────────────────────
 
@@ -249,6 +253,54 @@ export class UsersService {
       })),
       recentMedia: user.media,
     };
+  }
+
+  // ─── Upload avatar / capa ────────────────────────────────
+
+  async uploadAvatar(userId: string, file: Express.Multer.File) {
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.mimetype)) {
+      throw new BadRequestException("Formato não suportado. Use JPEG, PNG ou WebP.");
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      throw new BadRequestException("Imagem muito grande. Máximo 5 MB.");
+    }
+
+    const { url } = await this.storage.uploadMedia(
+      file.buffer,
+      file.mimetype,
+      `avatars/${userId}`,
+    );
+
+    await this.prisma.userProfile.update({
+      where: { userId },
+      data:  { avatarUrl: url },
+    });
+
+    return { avatarUrl: url };
+  }
+
+  async uploadCover(userId: string, file: Express.Multer.File) {
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.mimetype)) {
+      throw new BadRequestException("Formato não suportado. Use JPEG, PNG ou WebP.");
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      throw new BadRequestException("Imagem muito grande. Máximo 10 MB.");
+    }
+
+    const { url } = await this.storage.uploadMedia(
+      file.buffer,
+      file.mimetype,
+      `covers/${userId}`,
+    );
+
+    await this.prisma.userProfile.update({
+      where: { userId },
+      data:  { coverUrl: url },
+    });
+
+    return { coverUrl: url };
   }
 
   async getCreatorsForSitemap(): Promise<Array<{ username: string; updatedAt: string }>> {

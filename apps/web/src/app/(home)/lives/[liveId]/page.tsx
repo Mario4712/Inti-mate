@@ -42,6 +42,7 @@ export default function LiveViewerPage() {
   const [live, setLive] = useState<LiveSession | null>(null);
   const [superChats, setSuperChats] = useState<SuperChat[]>([]);
   const [token, setToken] = useState<LiveToken | null>(null);
+  const [accessDenied, setAccessDenied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -68,8 +69,12 @@ export default function LiveViewerPage() {
       setSuperChats(Array.isArray(scRes.data) ? scRes.data : []);
     }).finally(() => setLoading(false));
 
-    // Get viewer token for LiveKit
-    api.post(`/lives/${liveId}/join`).then((r) => setToken(r.data)).catch(() => {});
+    // Get viewer token — also validates subscription access
+    api.post(`/lives/${liveId}/join`)
+      .then((r) => setToken(r.data))
+      .catch((e) => {
+        if (e?.response?.status === 403) setAccessDenied(true);
+      });
   }, [liveId]);
 
   // Socket.io for real-time superchats
@@ -138,6 +143,35 @@ export default function LiveViewerPage() {
     );
   }
 
+  if (accessDenied && live.requiresSubscription) {
+    return (
+      <div className="mx-auto max-w-md py-20 text-center">
+        <button onClick={() => router.back()} className="mb-6 flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-200">
+          <ArrowLeft size={16} /> Voltar
+        </button>
+        <div className="rounded-xl border border-purple-800/40 bg-purple-950/20 p-8">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-purple-900/40">
+            <Radio size={24} className="text-purple-400" />
+          </div>
+          <h2 className="text-lg font-bold text-white">Conteúdo exclusivo para assinantes</h2>
+          <p className="mt-2 text-sm text-gray-400">
+            Esta live é exclusiva para assinantes de{" "}
+            <span className="text-purple-300">{live.creator?.artisticName ?? "este criador"}</span>.
+            Assine para assistir.
+          </p>
+          {live.creator && (
+            <a
+              href={`/creator/${live.creator.username}`}
+              className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-purple-600 px-6 py-3 text-sm font-semibold text-white hover:bg-purple-700"
+            >
+              Ver planos de assinatura
+            </a>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   const AMOUNTS = ["2", "5", "10", "20", "50"];
 
   return (
@@ -183,16 +217,20 @@ export default function LiveViewerPage() {
             <h1 className="text-xl font-bold text-white">{live.title}</h1>
             <div className="mt-2 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="relative h-8 w-8 overflow-hidden rounded-full bg-gray-700">
-                  {live.creator.avatarUrl ? (
-                    <Image src={live.creator.avatarUrl} alt="" fill className="object-cover" />
-                  ) : (
-                    <span className="flex h-full w-full items-center justify-center text-sm font-bold text-gray-400">
-                      {live.creator.artisticName.charAt(0)}
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm text-gray-300">{live.creator.artisticName}</p>
+                {live.creator && (
+                  <>
+                    <div className="relative h-8 w-8 overflow-hidden rounded-full bg-gray-700">
+                      {live.creator.avatarUrl ? (
+                        <Image src={live.creator.avatarUrl} alt="" fill className="object-cover" />
+                      ) : (
+                        <span className="flex h-full w-full items-center justify-center text-sm font-bold text-gray-400">
+                          {live.creator.artisticName?.charAt(0) ?? "?"}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-300">{live.creator.artisticName}</p>
+                  </>
+                )}
               </div>
               {live.status === "LIVE" && (
                 <span className="text-sm text-gray-500">{live.viewerCount} assistindo</span>

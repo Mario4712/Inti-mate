@@ -193,7 +193,7 @@ export default function SettingsPage() {
           </div>
 
           <div className="space-y-3 rounded-lg border border-gray-800 bg-gray-900 p-4">
-            <label className="flex items-center justify-between gap-3 cursor-pointer">
+            <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm text-gray-200">Exibir localização</p>
                 <p className="text-xs text-gray-500">Mostra cidade/estado no seu perfil público</p>
@@ -201,12 +201,12 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setShowLocation((v) => !v)}
-                className={`relative h-6 w-11 rounded-full transition-colors ${showLocation ? "bg-purple-600" : "bg-gray-700"}`}
+                className={`relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors ${showLocation ? "bg-purple-600" : "bg-gray-700"}`}
               >
-                <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${showLocation ? "translate-x-5" : "translate-x-0.5"}`} />
+                <span className={`inline-block h-5 w-5 translate-y-0.5 rounded-full bg-white shadow transition-transform ${showLocation ? "translate-x-5" : "translate-x-0.5"}`} />
               </button>
-            </label>
-            <label className="flex items-center justify-between gap-3 cursor-pointer">
+            </div>
+            <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm text-gray-200">Perfil público</p>
                 <p className="text-xs text-gray-500">Permite que qualquer pessoa veja seu perfil</p>
@@ -214,11 +214,11 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setIsPublic((v) => !v)}
-                className={`relative h-6 w-11 rounded-full transition-colors ${isPublic ? "bg-purple-600" : "bg-gray-700"}`}
+                className={`relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors ${isPublic ? "bg-purple-600" : "bg-gray-700"}`}
               >
-                <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${isPublic ? "translate-x-5" : "translate-x-0.5"}`} />
+                <span className={`inline-block h-5 w-5 translate-y-0.5 rounded-full bg-white shadow transition-transform ${isPublic ? "translate-x-5" : "translate-x-0.5"}`} />
               </button>
-            </label>
+            </div>
           </div>
 
           {error && (

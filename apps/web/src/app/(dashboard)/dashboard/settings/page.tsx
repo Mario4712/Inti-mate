@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Save, Eye, EyeOff, Shield, Bell, User } from "lucide-react";
+import { Camera, Loader2, Save, Eye, EyeOff, Image as ImageIcon, Shield, Bell, User, Trash2 } from "lucide-react";
 import api from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
+import { useRouter } from "next/navigation";
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const router = useRouter();
   const [tab, setTab] = useState<"profile" | "security" | "notifications">("profile");
 
   // Profile
@@ -14,6 +16,10 @@ export default function SettingsPage() {
   const [bio, setBio] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileMsg, setProfileMsg] = useState("");
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
 
   // Security
   const [currentPassword, setCurrentPassword] = useState("");
@@ -22,6 +28,7 @@ export default function SettingsPage() {
   const [showNew, setShowNew] = useState(false);
   const [savingPwd, setSavingPwd] = useState(false);
   const [pwdMsg, setPwdMsg] = useState("");
+  const [pwdRequested, setPwdRequested] = useState(false);
 
   // Notifications
   const [notifEmail, setNotifEmail] = useState(true);
@@ -30,17 +37,70 @@ export default function SettingsPage() {
   const [notifMsg, setNotifMsg] = useState("");
 
   useEffect(() => {
-    if (user?.profile) {
-      setArtisticName(user.profile.artisticName ?? "");
-      setBio(user.profile.bio ?? "");
+    api.get("/users/me").then((r) => {
+      const p = r.data?.profile;
+      if (p) {
+        setArtisticName(p.artisticName ?? "");
+        setBio(p.bio ?? "");
+        if (p.avatarUrl) setAvatarPreview(p.avatarUrl);
+        if (p.coverUrl) setCoverPreview(p.coverUrl);
+      }
+    }).catch(() => {
+      if (user?.profile) {
+        setArtisticName(user.profile.artisticName ?? "");
+        setBio(user.profile.bio ?? "");
+      }
+    });
+  }, []);
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarPreview(URL.createObjectURL(file));
+    setUploadingAvatar(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await api.post("/users/me/avatar", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setAvatarPreview(res.data.avatarUrl);
+      setProfileMsg("Foto de perfil atualizada!");
+    } catch (e: any) {
+      setProfileMsg(e?.response?.data?.message ?? "Erro ao atualizar foto");
+    } finally {
+      setUploadingAvatar(false);
     }
-  }, [user]);
+  }
+
+  async function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCoverPreview(URL.createObjectURL(file));
+    setUploadingCover(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await api.post("/users/me/cover", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setCoverPreview(res.data.coverUrl);
+      setProfileMsg("Banner atualizado!");
+    } catch (e: any) {
+      setProfileMsg(e?.response?.data?.message ?? "Erro ao atualizar banner");
+    } finally {
+      setUploadingCover(false);
+    }
+  }
 
   async function saveProfile() {
     setSavingProfile(true);
     setProfileMsg("");
     try {
-      await api.patch("/profile/me", { artisticName: artisticName || undefined, bio: bio || undefined });
+      await api.patch("/users/me", {
+        ...(artisticName && { artisticName }),
+        bio: bio,
+      });
       setProfileMsg("Perfil atualizado com sucesso!");
     } catch (e: any) {
       setProfileMsg(e?.response?.data?.message ?? "Erro ao salvar perfil");
@@ -54,12 +114,13 @@ export default function SettingsPage() {
     setSavingPwd(true);
     setPwdMsg("");
     try {
-      await api.patch("/auth/change-password", { currentPassword, newPassword });
-      setPwdMsg("Senha alterada com sucesso!");
+      const res = await api.post("/auth/change-password/request", { currentPassword });
+      setPwdMsg(res.data?.message ?? "E-mail de confirmação enviado!");
+      setPwdRequested(true);
       setCurrentPassword("");
       setNewPassword("");
     } catch (e: any) {
-      setPwdMsg(e?.response?.data?.message ?? "Erro ao alterar senha");
+      setPwdMsg(e?.response?.data?.message ?? "Erro ao solicitar alteração de senha");
     } finally {
       setSavingPwd(false);
     }
@@ -69,12 +130,23 @@ export default function SettingsPage() {
     setSavingNotif(true);
     setNotifMsg("");
     try {
-      await api.patch("/notifications/preferences", { email: notifEmail, push: notifPush });
+      await api.patch("/notifications/preferences", { emailEnabled: notifEmail, pushEnabled: notifPush });
       setNotifMsg("Preferências salvas!");
     } catch (e: any) {
       setNotifMsg(e?.response?.data?.message ?? "Erro ao salvar preferências");
     } finally {
       setSavingNotif(false);
+    }
+  }
+
+  async function requestAccountDeletion() {
+    if (!confirm("Tem certeza que deseja solicitar a exclusão da sua conta? Seus dados serão removidos em até 30 dias (LGPD).")) return;
+    try {
+      await api.post("/users/me/data-deletion");
+      alert("Solicitação registrada. Você receberá um e-mail de confirmação.");
+      await logout();
+    } catch (e: any) {
+      alert(e?.response?.data?.message ?? "Erro ao solicitar exclusão.");
     }
   }
 
@@ -109,6 +181,49 @@ export default function SettingsPage() {
         {/* Profile tab */}
         {tab === "profile" && (
           <div className="space-y-4 max-w-md">
+            {/* Cover / Banner */}
+            <div>
+              <label className="mb-1.5 block text-sm text-gray-400">Banner do perfil</label>
+              <div className="relative h-24 w-full overflow-hidden rounded-xl bg-gray-800">
+                {coverPreview && (
+                  <img src={coverPreview} alt="Banner" className="h-full w-full object-cover" />
+                )}
+                <label className="absolute inset-0 flex cursor-pointer items-center justify-center gap-2 bg-black/40 text-sm text-white opacity-0 hover:opacity-100 transition-opacity">
+                  {uploadingCover ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : (
+                    <><ImageIcon size={18} /> Alterar banner</>
+                  )}
+                  <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleCoverChange} />
+                </label>
+              </div>
+            </div>
+
+            {/* Avatar */}
+            <div>
+              <label className="mb-1.5 block text-sm text-gray-400">Foto de perfil</label>
+              <div className="flex items-center gap-4">
+                <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-gray-800">
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="Avatar" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-2xl font-bold text-gray-500">
+                      {artisticName?.charAt(0)?.toUpperCase() ?? "?"}
+                    </span>
+                  )}
+                  <label className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/50 opacity-0 hover:opacity-100 transition-opacity">
+                    {uploadingAvatar ? (
+                      <Loader2 size={14} className="animate-spin text-white" />
+                    ) : (
+                      <Camera size={14} className="text-white" />
+                    )}
+                    <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleAvatarChange} />
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500">Clique na foto para alterar. JPEG, PNG ou WebP, máx. 5 MB.</p>
+              </div>
+            </div>
+
             <div>
               <label className="label">E-mail</label>
               <input type="email" className="input opacity-60 cursor-not-allowed" value={user?.email ?? ""} disabled />
@@ -141,12 +256,29 @@ export default function SettingsPage() {
               <Save size={15} />
               {savingProfile ? "Salvando..." : "Salvar perfil"}
             </button>
+
+            <div className="rounded-xl border border-red-900/40 bg-red-950/20 p-4 mt-4">
+              <p className="text-sm font-semibold text-red-400 mb-1">Zona de perigo</p>
+              <p className="text-xs text-gray-500 mb-3">Seus dados serão removidos em até 30 dias (LGPD).</p>
+              <button
+                onClick={requestAccountDeletion}
+                className="flex items-center gap-2 rounded-lg border border-red-800 px-4 py-2 text-sm text-red-400 hover:bg-red-900/30 transition-colors"
+              >
+                <Trash2 size={14} />
+                Excluir minha conta
+              </button>
+            </div>
           </div>
         )}
 
         {/* Security tab */}
         {tab === "security" && (
           <div className="space-y-4 max-w-md">
+            {pwdRequested && (
+              <div className="rounded-lg bg-blue-900/30 border border-blue-700 px-4 py-3 text-sm text-blue-300">
+                Verifique seu e-mail e clique no link para confirmar a nova senha.
+              </div>
+            )}
             <div>
               <label className="label">Senha atual</label>
               <div className="relative">
