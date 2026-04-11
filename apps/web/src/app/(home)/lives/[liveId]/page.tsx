@@ -67,22 +67,26 @@ export default function LiveViewerPage() {
     ]).then(([liveData, scRes]) => {
       setLive(liveData);
       setSuperChats(Array.isArray(scRes.data) ? scRes.data : []);
-    }).finally(() => setLoading(false));
 
-    // Get viewer token — also validates subscription access
-    api.post(`/lives/${liveId}/join`)
-      .then((r) => setToken(r.data))
-      .catch((e) => {
-        if (e?.response?.status === 403) setAccessDenied(true);
-      });
+      // Only try to get a viewer token when the live is actually LIVE
+      if (liveData?.status === "LIVE") {
+        api.post(`/lives/${liveId}/join`)
+          .then((r) => setToken(r.data))
+          .catch((e) => {
+            if (e?.response?.status === 403) setAccessDenied(true);
+          });
+      }
+    }).finally(() => setLoading(false));
   }, [liveId]);
 
-  // Socket.io for real-time superchats
+  // Socket.io for real-time superchats — only connect when the live is actually live
   useEffect(() => {
+    if (!live || live.status !== "LIVE") return;
+
     const accessToken = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
     if (!accessToken) return;
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3333";
     const socket = io(`${apiUrl}/chat`, {
       auth: { token: accessToken },
       transports: ["websocket"],
@@ -102,7 +106,7 @@ export default function LiveViewerPage() {
       socket.emit("live:leave", { liveSessionId: liveId });
       socket.disconnect();
     };
-  }, [liveId]);
+  }, [liveId, live?.status]);
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });

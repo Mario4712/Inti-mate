@@ -28,6 +28,7 @@ import { VerifiedTierModule } from "./verified-tier/verified-tier.module";
 import { AiPersonaModule } from "./ai-persona/ai-persona.module";
 import { RecommendationsModule } from "./recommendations/recommendations.module";
 import { CollabModule } from "./collab/collab.module";
+import { AdminModule } from "./admin/admin.module";
 import { TournamentsModule } from "./tournaments/tournaments.module";
 import { CryptoPaymentsModule } from "./crypto-payments/crypto-payments.module";
 import { LocationModule } from "./location/location.module";
@@ -80,6 +81,7 @@ import appConfig from "./config/app.config";
     AccessLogModule,
     AuthModule,
     UsersModule,
+    AdminModule,
     ModerationModule,
     PaymentsModule,
     SubscriptionsModule,

@@ -15,13 +15,19 @@ import {
   User,
   Wallet,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function HomeLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+    }
+  }, [isLoading, isAuthenticated, pathname, router]);
 
   if (isLoading) {
     return (
@@ -32,7 +38,6 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
   }
 
   if (!isAuthenticated) {
-    if (typeof window !== "undefined") router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
     return null;
   }
 

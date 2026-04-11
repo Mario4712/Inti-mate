@@ -17,7 +17,7 @@ export interface User {
   id: string;
   email: string;
   username: string;
-  role: "CONSUMER" | "CREATOR" | "ADMIN";
+  role: "CONSUMER" | "CREATOR" | "MODERATOR" | "ADMIN";
   emailVerified: boolean;
   twoFactorEnabled: boolean;
   profile?: {

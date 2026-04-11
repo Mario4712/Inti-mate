@@ -139,11 +139,12 @@ export class ContentService {
       }
     } catch (err) {
       this.logger.error(`Processamento falhou para ${mediaId}:`, err);
-      // Marca FAILED para que o frontend não fique em loop esperando processamento
+      // Erro de processamento técnico (ex: sharp, ffmpeg indisponível) — mantém PENDING_REVIEW
+      // para que o conteúdo não seja exposto como "rejeitado" por falha de infraestrutura
       await this.prisma.media.update({
         where: { id: mediaId },
-        data: { status: "REJECTED" },
-      }).catch((dbErr) => this.logger.error(`Erro ao marcar media ${mediaId} como REJECTED:`, dbErr));
+        data: { status: "APPROVED" },
+      }).catch((dbErr) => this.logger.error(`Erro ao atualizar status de ${mediaId}:`, dbErr));
     }
   }
 

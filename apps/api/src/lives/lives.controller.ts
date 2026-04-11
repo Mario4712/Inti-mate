@@ -7,6 +7,7 @@ import {
   IsString, IsOptional, IsBoolean, IsInt, IsDateString,
   MaxLength, Min, Max,
 } from "class-validator";
+import { Type } from "class-transformer";
 import { LivesService } from "./lives.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { OptionalJwtGuard } from "../auth/guards/optional-jwt.guard";
@@ -16,12 +17,12 @@ class CreateLiveDto {
   @IsOptional() @IsString() @MaxLength(1000) description?: string;
   @IsOptional() @IsDateString() scheduledAt?: string;
   @IsOptional() @IsBoolean() requiresSubscription?: boolean;
-  @IsOptional() @IsInt() @Min(10) @Max(100000) maxViewers?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(10) @Max(100000) maxViewers?: number;
   @IsOptional() @IsBoolean() recordingEnabled?: boolean;
 }
 
 class SendSuperChatDto {
-  @IsInt() @Min(200) amountCents: number;    // em centavos (mínimo R$ 2,00)
+  @Type(() => Number) @IsInt() @Min(200) amountCents: number;    // em centavos (mínimo R$ 2,00)
   @IsString() @MaxLength(200) message: string;
 }
 

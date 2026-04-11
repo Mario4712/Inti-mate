@@ -41,27 +41,31 @@ export class MediaProcessorService {
       return { optimized: input, thumbnail: input, width: 0, height: 0 };
     }
 
-    const image = sharp(input);
-    const metadata = await image.metadata();
+    try {
+      const metadata = await sharp(input).metadata();
 
-    // Otimiza imagem original (max 1920px no maior lado, qualidade 85)
-    const optimized = await sharp(input)
-      .resize(1920, 1920, { fit: "inside", withoutEnlargement: true })
-      .jpeg({ quality: 85, mozjpeg: true })
-      .toBuffer();
+      // Otimiza imagem original (max 1920px no maior lado, qualidade 85)
+      const optimized = await sharp(input)
+        .resize(1920, 1920, { fit: "inside", withoutEnlargement: true })
+        .jpeg({ quality: 85 })
+        .toBuffer();
 
-    // Gera thumbnail 300x300 (crop center)
-    const thumbnail = await sharp(input)
-      .resize(300, 300, { fit: "cover", position: "centre" })
-      .jpeg({ quality: 75 })
-      .toBuffer();
+      // Gera thumbnail 300x300 (crop center)
+      const thumbnail = await sharp(input)
+        .resize(300, 300, { fit: "cover", position: "centre" })
+        .jpeg({ quality: 75 })
+        .toBuffer();
 
-    return {
-      optimized,
-      thumbnail,
-      width:  metadata.width  ?? 0,
-      height: metadata.height ?? 0,
-    };
+      return {
+        optimized,
+        thumbnail,
+        width:  metadata.width  ?? 0,
+        height: metadata.height ?? 0,
+      };
+    } catch (err) {
+      this.logger.warn(`sharp falhou ao processar imagem — retornando original. Erro: ${(err as Error).message}`);
+      return { optimized: input, thumbnail: input, width: 0, height: 0 };
+    }
   }
 
   // ─── Vídeo HLS ───────────────────────────────────────────
