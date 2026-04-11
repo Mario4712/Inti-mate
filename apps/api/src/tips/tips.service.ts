@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { IsBoolean, IsNumber, IsOptional, IsString, IsUUID, MaxLength, Min } from "class-validator";
+import { Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { PrismaService } from "../common/database/prisma.service";
 
@@ -13,6 +14,7 @@ export class SendTipDto {
   creatorId: string;
 
   @ApiProperty({ description: "Valor em R$ (mínimo R$2)" })
+  @Type(() => Number)
   @IsNumber()
   @Min(2)
   amount: number;

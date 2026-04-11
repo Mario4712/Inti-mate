@@ -344,6 +344,7 @@ model Subscription {
   @@unique([subscriberId, creatorId, planId])
   @@index([subscriberId])
   @@index([creatorId])
+  @@index([subscriberId, creatorId, status])  // acesso frequente em checkSubscriptionAccess
 }
 
 model PpvContent {

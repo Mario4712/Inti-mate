@@ -139,10 +139,11 @@ export class ContentService {
       }
     } catch (err) {
       this.logger.error(`Processamento falhou para ${mediaId}:`, err);
+      // Marca FAILED para que o frontend não fique em loop esperando processamento
       await this.prisma.media.update({
         where: { id: mediaId },
-        data: { status: "PENDING_REVIEW" },
-      });
+        data: { status: "REJECTED" },
+      }).catch((dbErr) => this.logger.error(`Erro ao marcar media ${mediaId} como REJECTED:`, dbErr));
     }
   }
 
@@ -172,8 +173,8 @@ export class ContentService {
           id: true, type: true, visibility: true,
           thumbnailUrl: true, title: true, description: true,
           durationSec: true, viewCount: true, createdAt: true,
-          // processedUrl só se assinante
-          processedUrl: hasAccess,
+          // processedUrl só exposta para assinantes
+          ...(hasAccess ? { processedUrl: true } : {}),
         },
         skip, take: limit,
         orderBy: { createdAt: "desc" },

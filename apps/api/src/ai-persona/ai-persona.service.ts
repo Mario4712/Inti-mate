@@ -74,8 +74,9 @@ export class AiPersonaService {
       throw new NotFoundException("Este criador não tem IA persona ativa");
     }
 
-    // Rate limit por fã
-    const today = new Date(); today.setHours(0, 0, 0, 0);
+    // Rate limit por fã — contagem da janela do dia atual (UTC)
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
     const msgCount = await this.prisma.aiPersonaMessage.count({
       where: { personaId: persona.id, userId: fanId, createdAt: { gte: today } },
     });
@@ -105,27 +106,39 @@ export class AiPersonaService {
         AI_DISCLAIMER,
       ].join("\n");
 
-      try {
-        const response = await this.anthropic.messages.create({
-          model:      "claude-haiku-4-5-20251001",
-          max_tokens: 500,
-          system:     systemContent,
-          messages:   [{ role: "user", content: userMsg }],
-        });
+      const apiKey = this.config.get("app.anthropic.apiKey");
+      if (!apiKey) {
+        this.logger.warn("ANTHROPIC_API_KEY não configurada — retornando fallback");
+        reply     = `Este criador tem IA configurada mas o serviço está temporariamente indisponível.\n\n${AI_DISCLAIMER}`;
+        modelUsed = "no-api-key";
+      } else {
+        try {
+          const response = await this.anthropic.messages.create({
+            model:      "claude-haiku-4-5-20251001",
+            max_tokens: 500,
+            system:     systemContent,
+            messages:   [{ role: "user", content: userMsg }],
+          });
 
-        reply     = (response.content[0] as any).text ?? "";
-        modelUsed = "claude-haiku-4-5";
-      } catch (err) {
-        this.logger.error("Erro na chamada à API Anthropic:", err);
-        reply     = `Não consegui responder agora. Tente novamente mais tarde.\n\n${AI_DISCLAIMER}`;
-        modelUsed = "error-fallback";
+          reply     = (response.content[0] as any).text ?? "";
+          modelUsed = "claude-haiku-4-5";
+
+          // Garante que o disclaimer está presente mesmo se o modelo não o incluiu
+          if (!reply.includes(AI_DISCLAIMER)) {
+            reply = `${reply}\n\n${AI_DISCLAIMER}`;
+          }
+        } catch (err) {
+          this.logger.error("Erro na chamada à API Anthropic:", err);
+          reply     = `Não consegui responder agora. Tente novamente mais tarde.\n\n${AI_DISCLAIMER}`;
+          modelUsed = "error-fallback";
+        }
       }
     }
 
-    // Persiste para auditoria
-    await this.prisma.aiPersonaMessage.create({
+    // Persiste para auditoria (fire-and-forget — não bloqueia resposta)
+    this.prisma.aiPersonaMessage.create({
       data: { personaId: persona.id, userId: fanId, userMsg, aiReply: reply, modelUsed },
-    });
+    }).catch((err) => this.logger.error("Erro ao persistir mensagem AI:", err));
 
     return reply;
   }

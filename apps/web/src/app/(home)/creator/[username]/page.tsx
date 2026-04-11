@@ -69,7 +69,17 @@ export default function CreatorProfilePage() {
 
   useEffect(() => {
     api.get(`/users/creator/${username}`)
-      .then((r) => setCreator(r.data))
+      .then((r) => {
+        const data = r.data;
+        // API retorna monthlyPrice em centavos → converte para reais
+        if (data?.plans) {
+          data.plans = data.plans.map((p: Plan) => ({
+            ...p,
+            monthlyPrice: Math.round(Number(p.monthlyPrice)) / 100,
+          }));
+        }
+        setCreator(data);
+      })
       .catch((e) => {
         if (e?.response?.status === 404) setNotFound(true);
       })
@@ -166,7 +176,7 @@ export default function CreatorProfilePage() {
                   </p>
                   {plan.description && <p className="mt-2 text-sm text-gray-400">{plan.description}</p>}
                   <Link
-                    href={`/subscribe/${creator.id}?plan=${plan.id}`}
+                    href={`/subscribe/${creator.username}?plan=${plan.id}`}
                     className="mt-4 flex w-full items-center justify-center rounded-lg bg-purple-600 py-2.5 text-sm font-semibold text-white hover:bg-purple-700 transition-colors"
                   >
                     Assinar por R$ {plan.monthlyPrice.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}

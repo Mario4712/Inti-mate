@@ -27,8 +27,9 @@ export class UsersService {
         bio: true,
         avatarUrl: true,
         coverUrl: true,
-        city: this.selectIfPublic(),
-        state: this.selectIfPublic(),
+        city: true,
+        state: true,
+        showLocation: true,
         isCreator: true,
         isPublic: true,
         createdAt: true,
@@ -40,7 +41,13 @@ export class UsersService {
       throw new NotFoundException("Perfil não encontrado");
     }
 
-    return profile;
+    // Respeita preferência de privacidade de localização (LGPD)
+    const { showLocation, ...rest } = profile;
+    return {
+      ...rest,
+      city:  showLocation ? profile.city  : null,
+      state: showLocation ? profile.state : null,
+    };
   }
 
   // ─── Perfil privado (próprio usuário) ────────────────────
@@ -249,7 +256,8 @@ export class UsersService {
       subscriberCount: user._count.mySubscriptions,
       plans:           user.creatorPlans.map((p) => ({
         ...p,
-        monthlyPrice: Number(p.monthlyPrice),
+        // monthlyPrice é Decimal no banco — converte para número inteiro (centavos)
+        monthlyPrice: Math.round(Number(p.monthlyPrice)),
       })),
       recentMedia: user.media,
     };
@@ -316,9 +324,4 @@ export class UsersService {
     }));
   }
 
-  private selectIfPublic() {
-    // Prisma não suporta conditional select diretamente;
-    // filtramos na camada de serviço
-    return true;
-  }
 }

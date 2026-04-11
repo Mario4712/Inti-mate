@@ -24,7 +24,8 @@ interface Creator {
 }
 
 export default function SubscribePage() {
-  const { creatorId } = useParams<{ creatorId: string }>();
+  // O parâmetro da URL agora é username (ex: /subscribe/joaosilva?plan=...)
+  const { creatorId: usernameParam } = useParams<{ creatorId: string }>();
   const router = useRouter();
 
   const [creator, setCreator] = useState<Creator | null>(null);
@@ -36,34 +37,63 @@ export default function SubscribePage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
+  // Detecta se é UUID (ID) ou username
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(usernameParam)
+    || /^c[a-z0-9]{24}$/i.test(usernameParam); // cuid format
+
   useEffect(() => {
-    Promise.all([
-      api.get(`/users/${creatorId}/profile`).catch(() => ({ data: null })),
-      api.get(`/subscriptions/plans/creator/${creatorId}`).catch(() => ({ data: [] })),
-    ]).then(([creatorRes, plansRes]) => {
-      setCreator(creatorRes.data);
-      const activePlans = (Array.isArray(plansRes.data) ? plansRes.data : []).filter((p: Plan) => p.isActive);
-      setPlans(activePlans);
-      if (activePlans.length > 0) setSelectedPlan(activePlans[0].id);
-    }).finally(() => setLoading(false));
-  }, [creatorId]);
+    if (!usernameParam) return;
+
+    const creatorEndpoint = isUuid
+      ? null // sem endpoint por UUID — requer username
+      : api.get(`/users/creator/${usernameParam}`).catch(() => ({ data: null }));
+
+    const creatorPromise = creatorEndpoint ?? Promise.resolve({ data: null });
+
+    creatorPromise.then((creatorRes) => {
+      const creatorData = creatorRes.data;
+      if (creatorData) {
+        setCreator(creatorData);
+        const creatorId = creatorData.id;
+
+        // Busca planos do criador
+        api.get(`/subscriptions/plans/creator/${creatorId}`)
+          .then((plansRes) => {
+            const activePlans = (Array.isArray(plansRes.data) ? plansRes.data : [])
+              .filter((p: Plan) => p.isActive)
+              .map((p: Plan) => ({
+                ...p,
+                // API retorna monthlyPrice em centavos → converte para reais
+                monthlyPrice: Math.round(Number(p.monthlyPrice)) / 100,
+              }));
+            setPlans(activePlans);
+            if (activePlans.length > 0) setSelectedPlan(activePlans[0].id);
+          })
+          .catch(() => {})
+          .finally(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
+    }).catch(() => setLoading(false));
+  }, [usernameParam, isUuid]);
 
   const multiplier = interval === "MONTHLY" ? 1 : interval === "QUARTERLY" ? 3 * 0.95 : 12 * 0.85;
   const discount = interval === "QUARTERLY" ? "5% off" : interval === "YEARLY" ? "15% off" : null;
 
   async function handleSubscribe() {
-    if (!selectedPlan) return;
+    if (!selectedPlan || !creator) return;
     setError("");
     setSubscribing(true);
     try {
+      // SubscribeDto espera: planId, provider, paymentToken
+      // Para MVP/mock, usamos provider "pagarme" com token mock
       await api.post("/subscriptions/subscribe", {
-        creatorId,
         planId: selectedPlan,
-        interval,
-        paymentMethod: "PIX",
+        provider: "pagarme",
+        paymentToken: "mock-token",
       });
       setSuccess(true);
-      setTimeout(() => router.push(`/creator/${creator?.username}`), 2500);
+      setTimeout(() => router.push(`/creator/${creator.username}`), 2500);
     } catch (e: any) {
       setError(e?.response?.data?.message ?? "Erro ao processar assinatura. Tente novamente.");
     } finally {

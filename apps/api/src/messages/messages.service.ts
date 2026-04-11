@@ -106,10 +106,20 @@ export class MessagesService {
     });
     if (!conv) throw new NotFoundException("Conversa não encontrada");
 
+    // Cursor-based pagination: `before` é o ID da mensagem mais antiga da página atual
+    let cursorCreatedAt: Date | undefined;
+    if (before) {
+      const cursorMsg = await this.prisma.message.findUnique({
+        where: { id: before },
+        select: { createdAt: true },
+      });
+      cursorCreatedAt = cursorMsg?.createdAt;
+    }
+
     const messages = await this.prisma.message.findMany({
       where: {
         conversationId,
-        ...(before ? { id: { lt: before } } : {}),
+        ...(cursorCreatedAt ? { createdAt: { lt: cursorCreatedAt } } : {}),
       },
       orderBy: { createdAt: "desc" },
       take: PAGE_SIZE,

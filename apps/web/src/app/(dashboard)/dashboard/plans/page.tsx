@@ -34,7 +34,8 @@ export default function PlansPage() {
       const res = await api.get(`/subscriptions/plans/creator/${creatorId}`);
       setPlans(Array.isArray(res.data) ? res.data.map((p: Plan) => ({
         ...p,
-        monthlyPrice: Number(p.monthlyPrice),
+        // API retorna centavos (ex: 2990) → convertemos para reais (29.90) para exibição
+        monthlyPrice: Math.round(Number(p.monthlyPrice)) / 100,
       })) : []);
     } catch {
       // ignore
@@ -77,14 +78,16 @@ export default function PlansPage() {
     const price = parseFloat(form.monthlyPrice);
     if (!form.name.trim()) { setError("Nome é obrigatório"); return; }
     if (isNaN(price) || price < 5) { setError("Preço mínimo: R$ 5,00"); return; }
+    if (price > 1000) { setError("Preço máximo: R$ 1.000,00"); return; }
 
     setSaving(true);
     setError("");
     try {
+      // API espera centavos inteiros (R$ 29,90 → 2990)
       const payload = {
         name: form.name.trim(),
         description: form.description.trim() || null,
-        monthlyPrice: price,
+        monthlyPrice: Math.round(price * 100),
       };
       if (editingId) {
         await api.patch(`/subscriptions/plans/${editingId}`, payload);

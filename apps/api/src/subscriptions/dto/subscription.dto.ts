@@ -8,6 +8,7 @@ import {
   Min,
   MinLength,
 } from "class-validator";
+import { Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class CreatePlanDto {
@@ -22,25 +23,29 @@ export class CreatePlanDto {
   description?: string;
 
   @ApiProperty({ description: "Preço mensal em centavos (R$ 9,90 = 990)", example: 990 })
+  @Type(() => Number)
   @IsInt()
-  @Min(500)   // mínimo R$ 5,00
+  @Min(500)    // mínimo R$ 5,00
   @Max(100000) // máximo R$ 1.000,00
   monthlyPrice: number;
 
   @ApiPropertyOptional({ description: "Preço trimestral em centavos" })
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(500)
   priceQuarterly?: number;
 
   @ApiPropertyOptional({ description: "Preço anual em centavos" })
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(500)
   priceYearly?: number;
 
   @ApiPropertyOptional({ description: "Limite de assinantes (null = ilimitado)" })
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   maxSlots?: number;
