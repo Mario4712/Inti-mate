@@ -180,14 +180,26 @@ export class AdminController {
   // ─── Conteúdo / Denúncias ────────────────────────────────
 
   @Get("reports")
-  @ApiOperation({ summary: "Denúncias de conteúdo pendentes" })
-  @ApiQuery({ name: "page",  required: false, type: Number })
-  @ApiQuery({ name: "limit", required: false, type: Number })
+  @ApiOperation({ summary: "Denúncias de usuários" })
+  @ApiQuery({ name: "page",   required: false, type: Number })
+  @ApiQuery({ name: "limit",  required: false, type: Number })
+  @ApiQuery({ name: "status", required: false, enum: ["PENDING", "RESOLVED"] })
   listReports(
     @Query("page",  new DefaultValuePipe(1),  ParseIntPipe) page:  number,
     @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query("status") status?: string,
   ) {
-    return this.adminService.listReports({ page, limit });
+    return this.adminService.listReports({ page, limit, status });
+  }
+
+  @Patch("reports/:reportId/resolve")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Marcar denúncia como resolvida" })
+  resolveReport(
+    @Param("reportId") reportId: string,
+    @CurrentUser("id") adminId: string,
+  ) {
+    return this.adminService.resolveReport(reportId, adminId);
   }
 
   @Get("content")

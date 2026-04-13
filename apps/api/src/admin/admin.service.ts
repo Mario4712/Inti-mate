@@ -28,7 +28,7 @@ export class AdminService {
       this.prisma.ageVerification.count({ where: { status: "PENDING" } }),
       this.prisma.withdrawal.count({ where: { status: "PENDING" } }),
       this.prisma.media.count({ where: { status: "PENDING_REVIEW" } }),
-      this.prisma.moderationLog.count({ where: { action: "ESCALATED" } }),
+      this.prisma.report.count({ where: { status: "PENDING" } }),
       this.prisma.transaction.aggregate({
         where: {
           status: "PAID",
@@ -108,7 +108,7 @@ export class AdminService {
         _count: {
           select: {
             mySubscriptions: true,
-            subscribers: true,
+            subscriptions: true,
             media: true,
           },
         },
@@ -297,32 +297,60 @@ export class AdminService {
     return { message: `Saque marcado como ${status}` };
   }
 
-  // ─── Conteúdo / Denúncias ────────────────────────────────
+  // ─── Denúncias ────────────────────────────────────────────
 
-  async listReports(opts: { page: number; limit: number }) {
-    const { page, limit } = opts;
+  async listReports(opts: { page: number; limit: number; status?: string }) {
+    const { page, limit, status } = opts;
     const skip = (page - 1) * limit;
 
-    const where = { action: "ESCALATED" };
+    const where: any = {};
+    if (status) where.status = status;
+    else where.status = "PENDING";
 
     const [items, total] = await this.prisma.$transaction([
-      this.prisma.moderationLog.findMany({
+      this.prisma.report.findMany({
         where,
         skip, take: limit,
         orderBy: { createdAt: "desc" },
         select: {
-          id: true, contentId: true, contentType: true,
-          action: true, reason: true, createdAt: true,
-          moderatorId: true, reportedToAuthority: true,
+          id: true, contentId: true, reason: true, status: true,
+          createdAt: true, resolvedAt: true,
+          reportedUserId: true,
+          reporter:     { select: { username: true } },
+          reportedUser: { select: { username: true } },
         },
       }),
-      this.prisma.moderationLog.count({ where }),
+      this.prisma.report.count({ where }),
     ]);
 
     return {
-      items,
+      items: items.map((r) => ({
+        id:               r.id,
+        contentId:        r.contentId,
+        reportedUserId:   r.reportedUserId,
+        reporterUsername: r.reporter?.username ?? "",
+        reportedUsername: r.reportedUser?.username ?? null,
+        reason:           r.reason,
+        status:           r.status,
+        createdAt:        r.createdAt,
+        resolvedAt:       r.resolvedAt,
+      })),
       pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     };
+  }
+
+  async resolveReport(reportId: string, adminId: string) {
+    const report = await this.prisma.report.findUnique({ where: { id: reportId } });
+    if (!report) throw new NotFoundException("Denúncia não encontrada");
+    if (report.status === "RESOLVED") throw new BadRequestException("Denúncia já resolvida");
+
+    await this.prisma.report.update({
+      where: { id: reportId },
+      data: { status: "RESOLVED", resolvedAt: new Date(), resolvedById: adminId },
+    });
+
+    this.logger.log(`Admin ${adminId} resolveu denúncia ${reportId}`);
+    return { message: "Denúncia marcada como resolvida" };
   }
 
   async listContent(opts: { page: number; limit: number; status?: string }) {

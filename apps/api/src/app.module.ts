@@ -6,6 +6,7 @@ import { APP_GUARD } from "@nestjs/core";
 import { AuthModule } from "./auth/auth.module";
 import { UsersModule } from "./users/users.module";
 import { ModerationModule } from "./moderation/moderation.module";
+import { ReportsModule } from "./reports/reports.module";
 import { PaymentsModule } from "./payments/payments.module";
 import { SubscriptionsModule } from "./subscriptions/subscriptions.module";
 import { WithdrawalsModule } from "./withdrawals/withdrawals.module";
@@ -83,6 +84,7 @@ import appConfig from "./config/app.config";
     UsersModule,
     AdminModule,
     ModerationModule,
+    ReportsModule,
     PaymentsModule,
     SubscriptionsModule,
     WithdrawalsModule,
