@@ -146,7 +146,7 @@ O núcleo da plataforma está funcional: autenticação, assinaturas, conteúdo,
 | # | Feature | Backend | Frontend | Prioridade |
 |---|---------|---------|----------|------------|
 | 1 | Featured Creators | ✅ | ✅ | Baixa |
-| 2 | Story Browsing | ✅ | ❌ | Baixa |
+| 2 | Story Browsing | ✅ | ✅ | Baixa |
 | 3 | Edit Suggestions | ✅ | ❌ | Baixa-Média |
 | 4 | Verified Tier UI | ✅ parcial | ❌ | Baixa-Média |
 | 5 | Tournaments | ✅ | ❌ | Média |

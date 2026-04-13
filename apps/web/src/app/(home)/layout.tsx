@@ -14,6 +14,7 @@ import {
   Search,
   User,
   Wallet,
+  BookImage,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -106,6 +107,7 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
             {[
               { href: "/feed", label: "Início", icon: Home },
               { href: "/discover", label: "Descobrir", icon: Compass },
+              { href: "/stories", label: "Stories", icon: BookImage },
               { href: "/lives", label: "Lives", icon: Radio },
               { href: "/messages", label: "Mensagens", icon: MessageCircle },
             ].map(({ href, label, icon: Icon }) => {
