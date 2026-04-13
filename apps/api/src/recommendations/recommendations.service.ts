@@ -76,6 +76,20 @@ export class RecommendationsService {
     return { items, personalized: collaborative.length > 0 };
   }
 
+  // ─── Criadores em destaque ────────────────────────────────
+
+  async getFeaturedCreators() {
+    const profiles = await this.prisma.userProfile.findMany({
+      where: { featured: true, user: { status: "ACTIVE", role: "CREATOR" } },
+      select: {
+        userId: true, artisticName: true, avatarUrl: true, coverUrl: true,
+        category: true, bio: true, tags: true,
+      },
+      orderBy: { updatedAt: "desc" },
+    });
+    return { items: profiles };
+  }
+
   // ─── Transparência: por que estou vendo isso? ─────────────
 
   async explainRecommendation(viewerId: string, creatorId: string): Promise<string> {

@@ -157,6 +157,14 @@ export class AdminService {
     return { message: `Role alterada para ${role}` };
   }
 
+  async featureUser(userId: string, featured: boolean) {
+    const profile = await this.prisma.userProfile.findUnique({ where: { userId } });
+    if (!profile) throw new NotFoundException("Perfil não encontrado");
+
+    await this.prisma.userProfile.update({ where: { userId }, data: { featured } });
+    return { message: featured ? "Criador destacado" : "Destaque removido" };
+  }
+
   // ─── KYC ─────────────────────────────────────────────────
 
   async listKyc(opts: { page: number; limit: number; status?: string }) {

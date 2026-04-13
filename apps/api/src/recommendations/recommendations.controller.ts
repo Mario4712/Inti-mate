@@ -26,6 +26,12 @@ export class RecommendationsController {
     return this.service.getRecommendations(req.user.id, limit, withExplanations);
   }
 
+  @Get("featured")
+  @ApiOperation({ summary: "Criadores destacados na discovery (marcados por admin)" })
+  getFeatured() {
+    return this.service.getFeaturedCreators();
+  }
+
   @Get("explain/:creatorId")
   @ApiOperation({ summary: "Explica por que um criador foi recomendado ao usuário" })
   explain(

@@ -200,6 +200,7 @@ model UserProfile {
 
   isPublic     Boolean  @default(true)
   isCreator    Boolean  @default(false)
+  featured     Boolean  @default(false)  // destacado na página de discovery (marcado por admin)
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

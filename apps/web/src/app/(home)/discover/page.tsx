@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Search, SlidersHorizontal, Users, X, Loader2 } from "lucide-react";
+import { Search, SlidersHorizontal, Users, X, Loader2, Star } from "lucide-react";
 import api from "@/lib/api";
 import { Suspense } from "react";
 
@@ -20,6 +20,16 @@ interface Creator {
   subscriberCount: number;
   lowestPlanPrice?: number;
   tags: string[];
+}
+
+interface FeaturedCreator {
+  userId: string;
+  artisticName: string | null;
+  avatarUrl: string | null;
+  coverUrl: string | null;
+  category: string | null;
+  bio: string | null;
+  tags: string[] | null;
 }
 
 export default function DiscoverPage() {
@@ -39,9 +49,16 @@ function DiscoverContent() {
   const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") ?? "");
   const [showFilters, setShowFilters] = useState(false);
   const [creators, setCreators] = useState<Creator[]>([]);
+  const [featured, setFeatured] = useState<FeaturedCreator[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get("/recommendations/featured")
+      .then((r) => setFeatured(r.data.items ?? []))
+      .catch(() => {});
+  }, []);
 
   const search = useCallback(() => {
     setLoading(true);
@@ -74,6 +91,50 @@ function DiscoverContent() {
 
   return (
     <div className="space-y-6">
+      {/* Featured Creators */}
+      {featured.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Star size={15} className="text-yellow-400 fill-yellow-400" />
+            <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">Em destaque</h2>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+            {featured.map((f) => (
+              <Link
+                key={f.userId}
+                href={`/creator/${f.userId}`}
+                className="group flex-shrink-0 w-36 rounded-xl border border-yellow-500/20 bg-gray-900 overflow-hidden hover:border-yellow-500/50 transition-colors"
+              >
+                <div className="relative h-20 bg-gray-800">
+                  {f.coverUrl && (
+                    <Image src={f.coverUrl} alt="" fill className="object-cover opacity-70" />
+                  )}
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
+                    <div className="relative h-10 w-10 overflow-hidden rounded-full border-2 border-gray-900 bg-gray-700">
+                      {f.avatarUrl ? (
+                        <Image src={f.avatarUrl} alt={f.artisticName ?? ""} fill className="object-cover" />
+                      ) : (
+                        <span className="flex h-full w-full items-center justify-center text-sm font-bold text-gray-300">
+                          {(f.artisticName ?? "?").charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="pt-7 pb-3 px-2 text-center">
+                  <p className="text-xs font-semibold text-white truncate group-hover:text-yellow-300">
+                    {f.artisticName}
+                  </p>
+                  {f.category && (
+                    <p className="text-xs text-gray-500 capitalize mt-0.5">{f.category}</p>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Search bar */}
       <form onSubmit={handleSearch} className="flex gap-2">
         <div className="relative flex-1">

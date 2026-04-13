@@ -115,6 +115,20 @@ export class AdminController {
     return this.adminService.changeRole(userId, dto.role, adminId);
   }
 
+  @Patch("users/:userId/feature")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Destacar/remover destaque de criador na discovery" })
+  featureUser(@Param("userId") userId: string) {
+    return this.adminService.featureUser(userId, true);
+  }
+
+  @Patch("users/:userId/unfeature")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Remover destaque de criador na discovery" })
+  unfeatureUser(@Param("userId") userId: string) {
+    return this.adminService.featureUser(userId, false);
+  }
+
   // ─── KYC ─────────────────────────────────────────────────
 
   @Get("kyc")
