@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import {
   BarChart3,
+  CalendarClock,
   CreditCard,
   ExternalLink,
   Home,
@@ -15,23 +16,28 @@ import {
   PackageOpen,
   Settings,
   ShieldCheck,
+  Sparkles,
+  Trophy,
   Upload,
   Users,
   Video,
 } from "lucide-react";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Visão Geral", icon: LayoutDashboard },
-  { href: "/dashboard/content", label: "Conteúdo", icon: Upload },
-  { href: "/dashboard/plans", label: "Planos", icon: PackageOpen },
-  { href: "/dashboard/subscribers", label: "Assinantes", icon: Users },
-  { href: "/creator/earnings", label: "Receita", icon: CreditCard },
-  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/dashboard/lives", label: "Lives", icon: Video },
-  { href: "/messages", label: "Mensagens", icon: MessageCircle },
-  { href: "/dashboard/edit-suggestions", label: "Sugestões", icon: Lightbulb },
-  { href: "/dashboard/verified-tier", label: "Acesso Verificado", icon: ShieldCheck },
-  { href: "/dashboard/settings", label: "Configurações", icon: Settings },
+  { href: "/dashboard",                   label: "Visão Geral",      icon: LayoutDashboard },
+  { href: "/dashboard/content",           label: "Conteúdo",         icon: Upload },
+  { href: "/dashboard/plans",             label: "Planos",           icon: PackageOpen },
+  { href: "/dashboard/subscribers",       label: "Assinantes",       icon: Users },
+  { href: "/creator/earnings",            label: "Receita",          icon: CreditCard },
+  { href: "/dashboard/analytics",         label: "Analytics",        icon: BarChart3 },
+  { href: "/dashboard/lives",             label: "Lives",            icon: Video },
+  { href: "/messages",                    label: "Mensagens",        icon: MessageCircle },
+  { href: "/dashboard/tournaments",       label: "Torneios",         icon: Trophy },
+  { href: "/dashboard/scheduler",         label: "Agendador Social", icon: CalendarClock },
+  { href: "/dashboard/content-gen",       label: "Geração IA",       icon: Sparkles },
+  { href: "/dashboard/edit-suggestions",  label: "Sugestões",        icon: Lightbulb },
+  { href: "/dashboard/verified-tier",     label: "Acesso Verificado",icon: ShieldCheck },
+  { href: "/dashboard/settings",          label: "Configurações",    icon: Settings },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

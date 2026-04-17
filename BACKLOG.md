@@ -149,9 +149,9 @@ O núcleo da plataforma está funcional: autenticação, assinaturas, conteúdo,
 | 2 | Story Browsing | ✅ | ✅ | Baixa |
 | 3 | Edit Suggestions | ✅ | ✅ | Baixa-Média |
 | 4 | Verified Tier UI | ✅ | ✅ | Baixa-Média |
-| 5 | Tournaments | ✅ | ❌ | Média |
-| 6 | Social Scheduler | ✅ | ❌ | Média |
-| 7 | Content Generation UI | ✅ | ❌ | Média |
-| 8 | Push Notifications | ✅ | ❌ | Média |
-| 9 | AI Chat History | 🔧 falta endpoint de paginação | ❌ | Média |
-| 10 | VR Content | ✅ | ❌ | Alta |
+| 5 | Tournaments | ✅ | ✅ | Média |
+| 6 | Social Scheduler | ✅ | ✅ | Média |
+| 7 | Content Generation UI | ✅ | ✅ | Média |
+| 8 | Push Notifications | ✅ | ✅ | Média |
+| 9 | AI Chat History | ✅ | ✅ | Média |
+| 10 | VR Content | ✅ | ✅ | Alta |

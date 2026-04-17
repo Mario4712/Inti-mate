@@ -5,24 +5,29 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import {
+  Bot,
   Compass,
+  Glasses,
   Home,
   LayoutDashboard,
   LogOut,
   MessageCircle,
   Radio,
   Search,
+  Trophy,
   User,
   Wallet,
   BookImage,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 export default function HomeLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [query, setQuery] = useState("");
+  usePushNotifications();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -105,11 +110,14 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
         <div className="flex border-t border-gray-800/50">
           <div className="mx-auto flex max-w-6xl w-full px-4">
             {[
-              { href: "/feed", label: "Início", icon: Home },
-              { href: "/discover", label: "Descobrir", icon: Compass },
-              { href: "/stories", label: "Stories", icon: BookImage },
-              { href: "/lives", label: "Lives", icon: Radio },
-              { href: "/messages", label: "Mensagens", icon: MessageCircle },
+              { href: "/feed",        label: "Início",     icon: Home },
+              { href: "/discover",    label: "Descobrir",  icon: Compass },
+              { href: "/stories",     label: "Stories",    icon: BookImage },
+              { href: "/tournaments", label: "Torneios",   icon: Trophy },
+              { href: "/vr",          label: "VR",         icon: Glasses },
+              { href: "/lives",       label: "Lives",      icon: Radio },
+              { href: "/ai-chats",    label: "IA Chats",   icon: Bot },
+              { href: "/messages",    label: "Mensagens",  icon: MessageCircle },
             ].map(({ href, label, icon: Icon }) => {
               const active = pathname === href || pathname.startsWith(href + "/");
               return (
