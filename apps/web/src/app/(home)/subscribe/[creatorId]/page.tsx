@@ -50,11 +50,24 @@ export default function SubscribePage() {
 
     const creatorPromise = creatorEndpoint ?? Promise.resolve({ data: null });
 
-    creatorPromise.then((creatorRes) => {
+    creatorPromise.then(async (creatorRes) => {
       const creatorData = creatorRes.data;
       if (creatorData) {
         setCreator(creatorData);
         const creatorId = creatorData.id;
+
+        // Verifica se já é assinante ativo — redireciona se sim
+        try {
+          const subsRes = await api.get("/subscriptions/mine");
+          const subs = Array.isArray(subsRes.data) ? subsRes.data : (subsRes.data?.items ?? []);
+          const alreadySubscribed = subs.some(
+            (s: any) => s.creatorId === creatorId && ["ACTIVE", "PAST_DUE"].includes(s.status)
+          );
+          if (alreadySubscribed) {
+            router.replace(`/creator/${creatorData.username}`);
+            return;
+          }
+        } catch { /* não bloqueia se falhar */ }
 
         // Busca planos do criador
         api.get(`/subscriptions/plans/creator/${creatorId}`)
@@ -63,7 +76,6 @@ export default function SubscribePage() {
               .filter((p: Plan) => p.isActive)
               .map((p: Plan) => ({
                 ...p,
-                // API retorna monthlyPrice em centavos → converte para reais
                 monthlyPrice: Math.round(Number(p.monthlyPrice)) / 100,
               }));
             setPlans(activePlans);
@@ -95,7 +107,12 @@ export default function SubscribePage() {
       setSuccess(true);
       setTimeout(() => router.push(`/creator/${creator.username}`), 2500);
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? "Erro ao processar assinatura. Tente novamente.");
+      const msg = e?.response?.data?.message ?? "";
+      if (msg.includes("assinatura ativa")) {
+        router.replace(`/creator/${creator!.username}`);
+        return;
+      }
+      setError(msg || "Erro ao processar assinatura. Tente novamente.");
     } finally {
       setSubscribing(false);
     }
