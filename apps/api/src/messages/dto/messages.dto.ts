@@ -1,7 +1,6 @@
 import {
   IsString,
   IsOptional,
-  IsUUID,
   MaxLength,
   IsNumber,
   Min,
@@ -10,7 +9,7 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class SendMessageDto {
   @ApiProperty()
-  @IsUUID()
+  @IsString()
   recipientId: string;
 
   @ApiProperty({ maxLength: 2000 })
@@ -33,6 +32,6 @@ export class SendMessageDto {
 export class GetMessagesDto {
   @ApiPropertyOptional()
   @IsOptional()
-  @IsUUID()
+  @IsString()
   before?: string; // cursor (messageId)
 }

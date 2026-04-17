@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import {
-  IsEnum, IsInt, IsNumber, IsOptional, IsString, IsUUID,
+  IsEnum, IsInt, IsNumber, IsOptional, IsString,
   MaxLength, Min, Max,
 } from "class-validator";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
@@ -51,7 +51,7 @@ export class CreateDigitalItemDto {
 
 export class CreateOrderDto {
   @ApiProperty()
-  @IsUUID()
+  @IsString()
   itemId: string;
 
   @ApiPropertyOptional({ maxLength: 500 })

@@ -29,14 +29,28 @@ async function main() {
   const passwordHash = await bcrypt.hash(PASSWORD, BCRYPT_ROUNDS);
 
   // ─── Clean existing seed data ────────────────────────────
-  // Order matters due to foreign keys
+  // Order matters due to foreign keys — leaf tables first
+  await prisma.storyPollVote.deleteMany({});
+  await prisma.storyPollOption.deleteMany({});
+  await prisma.storyPoll.deleteMany({});
+  await prisma.storyView.deleteMany({});
+  await prisma.story.deleteMany({});
+  await prisma.review.deleteMany({});
+  await prisma.liveSession.deleteMany({});
+  await prisma.message.deleteMany({});
+  await prisma.conversation.deleteMany({});
   await prisma.consentRecord.deleteMany({});
   await prisma.subscription.deleteMany({});
+  await prisma.transaction.deleteMany({});
+  await prisma.withdrawal.deleteMany({});
+  await prisma.tip.deleteMany({});
+  await prisma.report.deleteMany({});
   await prisma.media.deleteMany({});
   await prisma.creatorPlan.deleteMany({});
   await prisma.creatorBalance.deleteMany({});
   await prisma.notification.deleteMany({});
   await prisma.ageVerification.deleteMany({});
+  await prisma.pushSubscription.deleteMany({});
   await prisma.userProfile.deleteMany({});
   await prisma.session.deleteMany({});
   await prisma.emailVerificationToken.deleteMany({});

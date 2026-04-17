@@ -3,14 +3,14 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { IsBoolean, IsNumber, IsOptional, IsString, IsUUID, MaxLength, Min } from "class-validator";
+import { IsBoolean, IsNumber, IsOptional, IsString, MaxLength, Min } from "class-validator";
 import { Type } from "class-transformer";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { PrismaService } from "../common/database/prisma.service";
 
 export class SendTipDto {
   @ApiProperty({ description: "ID do criador que receberá a gorjeta" })
-  @IsUUID()
+  @IsString()
   creatorId: string;
 
   @ApiProperty({ description: "Valor em R$ (mínimo R$2)" })
@@ -32,7 +32,7 @@ export class SendTipDto {
 
   @ApiPropertyOptional({ description: "ID do post que originou a gorjeta" })
   @IsOptional()
-  @IsUUID()
+  @IsString()
   mediaId?: string;
 }
 

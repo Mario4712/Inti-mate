@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
@@ -11,17 +11,20 @@ export const metadata: Metadata = {
     template: "%s | Inti.mate",
   },
   description: "Conecte-se com seus criadores favoritos",
-  robots: {
-    index: false,
-    follow: false,
-  },
+  robots: { index: false, follow: false },
   manifest: "/manifest.json",
-  themeColor: "#7c3aed",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "Inti.mate",
   },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#7c3aed",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

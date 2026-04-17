@@ -246,7 +246,7 @@ export class ContentService {
       streamUrl = await this.storage.getSignedUrl(key, 7200);
     }
 
-    return { ...media, processedUrl: streamUrl };
+    return { ...media, processedUrl: streamUrl, isSubscribed: hasAccess };
   }
 
   async updateMedia(creatorId: string, mediaId: string, dto: UpdateMediaDto) {
