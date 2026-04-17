@@ -161,10 +161,11 @@ export class ContentService {
       ? await this.checkSubscriptionAccess(viewerId, creatorId)
       : false;
 
+    const isOwner = viewerId === creatorId;
     const where: any = {
       creatorId,
-      status: "APPROVED",
-      ...(hasAccess ? {} : { visibility: "PUBLIC" }),
+      ...(isOwner ? {} : { status: "APPROVED" }),
+      ...(isOwner || hasAccess ? {} : { visibility: "PUBLIC" }),
     };
 
     const [items, total] = await this.prisma.$transaction([
@@ -213,7 +214,8 @@ export class ContentService {
     sessionMeta?: { sessionId?: string; ipAddress?: string; userAgent?: string },
   ) {
     const media = await this.prisma.media.findUnique({ where: { id: mediaId } });
-    if (!media || media.status !== "APPROVED") throw new NotFoundException("Conteúdo não encontrado");
+    const isOwner = media?.creatorId === viewerId;
+    if (!media || (!isOwner && media.status !== "APPROVED")) throw new NotFoundException("Conteúdo não encontrado");
 
     const hasAccess =
       media.visibility === "PUBLIC" ||

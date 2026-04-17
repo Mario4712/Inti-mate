@@ -95,7 +95,7 @@ export class ContentController {
     @Query("limit", new DefaultValuePipe(20), ParseIntPipe) limit: number,
     @Request() req: any,
   ) {
-    const viewerId = req.user?.sub ?? null;
+    const viewerId = req.user?.id ?? null;
     return this.contentService.getCreatorGallery(creatorId, viewerId, page, limit);
   }
 

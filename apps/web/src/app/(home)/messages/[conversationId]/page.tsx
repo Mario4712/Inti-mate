@@ -63,48 +63,58 @@ export default function ChatPage() {
       .finally(() => setLoading(false));
   }, [conversationId]);
 
-  // Socket.io connection
+  // Socket.io connection — deferred so StrictMode double-invoke cleanup runs before socket is created
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
     if (!token) return;
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
-    const socket = io(`${apiUrl}/chat`, {
-      auth: { token },
-      transports: ["websocket"],
-    });
+    let socket: Socket | null = null;
+    let cancelled = false;
 
-    socketRef.current = socket;
+    const tid = setTimeout(() => {
+      if (cancelled) return;
 
-    socket.on("connect", () => {
-      socket.emit("conversation:join", { conversationId });
-      socket.emit("message:read", { conversationId });
-    });
-
-    socket.on("message:new", (msg: Message) => {
-      if (msg.conversationId !== conversationId) return;
-      setMessages((prev) => {
-        if (prev.find((m) => m.id === msg.id)) return prev;
-        return [...prev, msg];
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3333";
+      socket = io(`${apiUrl}/chat`, {
+        auth: { token },
+        transports: ["websocket"],
+        reconnectionAttempts: 3,
       });
-      if (msg.senderId !== myId) {
-        socket.emit("message:read", { conversationId });
-      }
-    });
+      socketRef.current = socket;
 
-    socket.on("message:typing", () => {
-      setIsTyping(true);
-      setTimeout(() => setIsTyping(false), 3000);
-    });
+      socket.on("connect", () => {
+        socket!.emit("conversation:join", { conversationId });
+        socket!.emit("message:read", { conversationId });
+      });
 
-    socket.on("message:read", () => {
-      setMessages((prev) =>
-        prev.map((m) => (m.status !== "READ" ? { ...m, status: "READ" } : m))
-      );
-    });
+      socket.on("message:new", (msg: Message) => {
+        if (msg.conversationId !== conversationId) return;
+        setMessages((prev) => {
+          if (prev.find((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+        if (msg.senderId !== myId) {
+          socket!.emit("message:read", { conversationId });
+        }
+      });
+
+      socket.on("message:typing", () => {
+        setIsTyping(true);
+        setTimeout(() => setIsTyping(false), 3000);
+      });
+
+      socket.on("message:read", () => {
+        setMessages((prev) =>
+          prev.map((m) => (m.status !== "READ" ? { ...m, status: "READ" } : m))
+        );
+      });
+    }, 0);
 
     return () => {
-      socket.disconnect();
+      cancelled = true;
+      clearTimeout(tid);
+      socket?.disconnect();
+      socketRef.current = null;
     };
   }, [conversationId, myId]);
 

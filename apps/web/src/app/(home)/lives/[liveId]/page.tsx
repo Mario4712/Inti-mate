@@ -92,25 +92,35 @@ export default function LiveViewerPage() {
     const accessToken = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
     if (!accessToken) return;
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3333";
-    const socket = io(`${apiUrl}/chat`, {
-      auth: { token: accessToken },
-      transports: ["websocket"],
-    });
+    let socket: Socket | null = null;
+    let cancelled = false;
 
-    socketRef.current = socket;
+    const tid = setTimeout(() => {
+      if (cancelled) return;
 
-    socket.on("connect", () => {
-      socket.emit("live:join", { liveSessionId: liveId });
-    });
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3333";
+      socket = io(`${apiUrl}/chat`, {
+        auth: { token: accessToken },
+        transports: ["websocket"],
+        reconnectionAttempts: 3,
+      });
+      socketRef.current = socket;
 
-    socket.on("live:superchat", (sc: SuperChat) => {
-      setSuperChats((prev) => [...prev, sc]);
-    });
+      socket.on("connect", () => {
+        socket!.emit("live:join", { liveSessionId: liveId });
+      });
+
+      socket.on("live:superchat", (sc: SuperChat) => {
+        setSuperChats((prev) => [...prev, sc]);
+      });
+    }, 0);
 
     return () => {
-      socket.emit("live:leave", { liveSessionId: liveId });
-      socket.disconnect();
+      cancelled = true;
+      clearTimeout(tid);
+      if (socket?.connected) socket.emit("live:leave", { liveSessionId: liveId });
+      socket?.disconnect();
+      socketRef.current = null;
     };
   }, [liveId, live?.status]);
 

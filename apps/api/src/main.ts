@@ -9,6 +9,9 @@ try { helmet = require("helmet"); } catch {}
 let expressJson: any, expressUrlencoded: any;
 try { const e = require("express"); expressJson = e.json; expressUrlencoded = e.urlencoded; } catch {}
 
+// BigInt não é serializável por padrão — converte para Number no JSON global
+(BigInt.prototype as any).toJSON = function () { return Number(this); };
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: ["error", "warn", "log"],
