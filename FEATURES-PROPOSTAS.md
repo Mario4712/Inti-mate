@@ -23,14 +23,14 @@
 - **Impacto:** Sem testes, cada deploy é um risco.
 
 ### 3. Seed de Dados e Migrations
-- [ ] Criar `packages/database/src/seed.ts` com dados de demo
-- [ ] Script de migration automática no CI e docker
-- [ ] Dados de exemplo: 3 criadores, 5 fãs, planos, conteúdos
+- [x] Criar `packages/database/src/seed.ts` com dados de demo
+- [x] Script de migration automática no CI e docker
+- [x] Dados de exemplo: 3 criadores, 5 fãs, planos, conteúdos
 
 ### 4. Webhook com Validação de Assinatura
-- [ ] Validar HMAC signature dos webhooks Pagar.me
-- [ ] Validar Stripe webhook signature (`stripe-signature` header)
-- [ ] Retornar 400 se assinatura inválida
+- [x] Validar HMAC signature dos webhooks Pagar.me
+- [x] Validar Stripe webhook signature (`stripe-signature` header)
+- [x] Retornar 400 se assinatura inválida
 
 ---
 
@@ -49,16 +49,16 @@
 - [ ] Integração com moderação automática (retorno de status)
 
 ### 7. Player de Vídeo HLS
-- [ ] Integrar hls.js para reprodução de vídeos processados
-- [ ] Controle de qualidade adaptativo
+- [x] Integrar hls.js para reprodução de vídeos processados
+- [x] Controle de qualidade adaptativo
 - [ ] Preview/teaser público com marca d'água
 - [ ] Player seguro que impede download direto
 
 ### 8. Notificações Push Reais
-- [ ] Instalar e configurar `web-push`
-- [ ] Service Worker para receber push notifications
-- [ ] UI de permissão de notificações no primeiro acesso
-- [ ] Integrar com endpoint existente de PushSubscription
+- [x] Instalar e configurar `web-push`
+- [x] Service Worker para receber push notifications
+- [x] UI de permissão de notificações no primeiro acesso
+- [x] Integrar com endpoint existente de PushSubscription
 
 ### 9. Dashboard do Criador
 - [ ] Visão geral: assinantes, receita, conteúdos
@@ -78,15 +78,15 @@
 ## P2 — Features de Diferenciação
 
 ### 11. PWA (Progressive Web App)
-- [ ] Manifest.json com ícones e tema
-- [ ] Service Worker para cache offline de assets estáticos
+- [x] Manifest.json com ícones e tema
+- [x] Service Worker para cache offline de assets estáticos
 - [ ] Banner "Instalar app" em dispositivos móveis
 - [ ] Funcionalidade offline básica (ver conteúdo já carregado)
 
 ### 12. Dark/Light Mode
-- [ ] Toggle de tema no header
-- [ ] Persistir preferência em localStorage
-- [ ] CSS variables para cores do tema
+- [x] Toggle de tema no header
+- [x] Persistir preferência em localStorage
+- [x] CSS variables para cores do tema
 - [ ] Respeitar `prefers-color-scheme` do sistema
 
 ### 13. Internacionalização (i18n)
@@ -102,10 +102,10 @@
 - [ ] Indexação automática de criadores no ES
 
 ### 15. Sistema de Reviews/Avaliações
-- [ ] Modelo `Review` no Prisma (rating 1-5, texto, creatorId, fanId)
-- [ ] Apenas assinantes ativos podem avaliar
-- [ ] Média de avaliação no perfil público do criador
-- [ ] Moderação de reviews ofensivas
+- [x] Modelo `Review` no Prisma (rating 1-5, texto, creatorId, fanId)
+- [x] Apenas assinantes ativos podem avaliar
+- [x] Média de avaliação no perfil público do criador
+- [x] Moderação de reviews ofensivas
 
 ### 16. Stories Interativos
 - [ ] Enquetes em stories (modelo `StoryPoll` com opções)

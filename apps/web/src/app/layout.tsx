@@ -12,8 +12,15 @@ export const metadata: Metadata = {
   },
   description: "Conecte-se com seus criadores favoritos",
   robots: {
-    index: false, // não indexar conteúdo adulto por padrão
+    index: false,
     follow: false,
+  },
+  manifest: "/manifest.json",
+  themeColor: "#7c3aed",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Inti.mate",
   },
 };
 

@@ -12,6 +12,7 @@ try { const e = require("express"); expressJson = e.json; expressUrlencoded = e.
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: ["error", "warn", "log"],
+    rawBody: true,
   });
 
   // Security headers

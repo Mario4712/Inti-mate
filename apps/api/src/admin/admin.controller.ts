@@ -5,6 +5,7 @@ import {
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from "@nestjs/swagger";
 import { AdminService } from "./admin.service";
 import { VerifiedTierService } from "../verified-tier/verified-tier.service";
+import { ReviewsService } from "../reviews/reviews.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -55,6 +56,7 @@ export class AdminController {
   constructor(
     private readonly adminService: AdminService,
     private readonly verifiedTierService: VerifiedTierService,
+    private readonly reviewsService: ReviewsService,
   ) {}
 
   // ─── Dashboard ───────────────────────────────────────────
@@ -279,5 +281,14 @@ export class AdminController {
   @ApiOperation({ summary: "Revogar Acesso Verificado de um usuário (admin)" })
   revokeVerifiedTier(@Param("userId") userId: string) {
     return this.verifiedTierService.revokeAccess(userId, "Revogado por administrador");
+  }
+
+  // ─── Reviews ─────────────────────────────────────────────
+
+  @Patch("reviews/:reviewId/hide")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Ocultar avaliação (moderação)" })
+  hideReview(@Param("reviewId") reviewId: string) {
+    return this.reviewsService.hide(reviewId);
   }
 }

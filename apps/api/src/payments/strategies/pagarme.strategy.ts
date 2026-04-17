@@ -78,21 +78,27 @@ export class PagarmeStrategy {
   }
 
   async parseWebhook(payload: any, signature: string): Promise<WebhookEvent> {
-    // Valida assinatura HMAC SHA-256 do Pagar.me
-    if (this.webhookSecret && process.env.NODE_ENV === "production") {
-      const body = typeof payload === "string" ? payload : JSON.stringify(payload);
+    // Valida assinatura HMAC SHA-256 do Pagar.me (todos os ambientes quando secret configurado)
+    if (this.webhookSecret) {
+      const body = Buffer.isBuffer(payload)
+        ? payload
+        : Buffer.from(typeof payload === "string" ? payload : JSON.stringify(payload));
       const expected = crypto
         .createHmac("sha256", this.webhookSecret)
         .update(body)
         .digest("hex");
 
-      if (!signature || !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature))) {
+      if (!signature || signature.length !== expected.length ||
+          !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature))) {
         this.logger.warn("Webhook Pagar.me: assinatura HMAC inválida");
         throw new UnauthorizedException("Assinatura de webhook inválida");
       }
     }
 
-    const type = payload.type as string;
+    // Parse JSON if raw buffer was passed
+    const data = Buffer.isBuffer(payload) ? JSON.parse(payload.toString()) : payload;
+
+    const type = data.type as string;
 
     const typeMap: Record<string, WebhookEvent["type"]> = {
       "order.paid": "payment.paid",
@@ -103,9 +109,9 @@ export class PagarmeStrategy {
 
     return {
       type: typeMap[type] ?? "payment.failed",
-      gatewayTxId: payload.data?.id ?? "",
-      reason: payload.data?.last_transaction?.gateway_response?.errors?.[0]?.message,
-      raw: payload,
+      gatewayTxId: data.data?.id ?? "",
+      reason: data.data?.last_transaction?.gateway_response?.errors?.[0]?.message,
+      raw: data,
     };
   }
 

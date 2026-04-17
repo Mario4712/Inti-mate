@@ -49,10 +49,13 @@ export class StripeStrategy {
   }
 
   async parseWebhook(payload: any, signature: string): Promise<WebhookEvent> {
-    // Valida assinatura Stripe Webhook (Stripe-Signature header format: t=...,v1=...)
-    if (this.webhookSecret && process.env.NODE_ENV === "production") {
+    // Valida assinatura Stripe Webhook em todos os ambientes quando secret configurado
+    if (this.webhookSecret) {
       this.verifyStripeSignature(payload, signature);
     }
+
+    // Parse JSON if raw buffer was passed
+    const data = Buffer.isBuffer(payload) ? JSON.parse(payload.toString()) : payload;
 
     const typeMap: Record<string, WebhookEvent["type"]> = {
       "payment_intent.succeeded": "payment.paid",
@@ -62,10 +65,10 @@ export class StripeStrategy {
     };
 
     return {
-      type: typeMap[payload.type] ?? "payment.failed",
-      gatewayTxId: payload.data?.object?.id ?? "",
-      reason: payload.data?.object?.last_payment_error?.message,
-      raw: payload,
+      type: typeMap[data.type] ?? "payment.failed",
+      gatewayTxId: data.data?.object?.id ?? "",
+      reason: data.data?.object?.last_payment_error?.message,
+      raw: data,
     };
   }
 
@@ -74,7 +77,9 @@ export class StripeStrategy {
       throw new UnauthorizedException("Stripe webhook: header de assinatura ausente");
     }
 
-    const body = typeof payload === "string" ? payload : JSON.stringify(payload);
+    const body = Buffer.isBuffer(payload)
+      ? payload
+      : Buffer.from(typeof payload === "string" ? payload : JSON.stringify(payload));
 
     // Parse Stripe-Signature: t=timestamp,v1=signature
     const elements = signatureHeader.split(",").reduce((acc: Record<string, string>, item) => {
@@ -97,10 +102,13 @@ export class StripeStrategy {
       throw new UnauthorizedException("Stripe webhook: timestamp fora da tolerância");
     }
 
-    const signedPayload = `${timestamp}.${body}`;
+    const signedPayload = Buffer.concat([
+      Buffer.from(`${timestamp}.`),
+      Buffer.isBuffer(body) ? body : Buffer.from(body),
+    ]);
     const expected = crypto.createHmac("sha256", this.webhookSecret).update(signedPayload).digest("hex");
 
-    if (!crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1))) {
+    if (v1.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1))) {
       throw new UnauthorizedException("Stripe webhook: assinatura inválida");
     }
   }

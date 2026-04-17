@@ -170,6 +170,8 @@ model User {
   reportsReceived         Report[]         @relation("ReportsReceived")
   withdrawals             Withdrawal[]     @relation("CreatorWithdrawals")
   creatorBalance          CreatorBalance?  @relation("CreatorBalance")
+  reviewsGiven            Review[]         @relation("FanReviews")
+  reviewsReceived         Review[]         @relation("CreatorReviews")
 
   @@index([email])
   @@index([username])
@@ -1494,4 +1496,28 @@ model ContentCustodyReview {
   @@index([reviewer1Id])
   @@index([reviewer2Id])
   @@index([finalDecision])
+}
+
+// ─────────────────────────────────────────────────────────────
+// REVIEWS — AVALIAÇÕES DE CRIADORES POR ASSINANTES ATIVOS
+// ─────────────────────────────────────────────────────────────
+
+model Review {
+  id        String  @id @default(cuid())
+  rating    Int     // 1–5
+  body      String? @db.VarChar(1000)
+  hidden    Boolean @default(false) // moderação
+
+  fanId     String
+  fan       User   @relation("FanReviews",     fields: [fanId],     references: [id], onDelete: Cascade)
+
+  creatorId String
+  creator   User   @relation("CreatorReviews", fields: [creatorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([fanId, creatorId])
+  @@index([creatorId, hidden])
+  @@index([fanId])
 }

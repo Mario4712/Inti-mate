@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Loader2, MessageCircle, Users } from "lucide-react";
+import { ArrowLeft, Loader2, MessageCircle, Star, Users } from "lucide-react";
 import api from "@/lib/api";
 import { TipButton } from "@/components/tips/TipButton";
 import { AiChatButton } from "@/components/ai-persona/AiChatButton";
+import { ReviewsSection } from "@/components/reviews/ReviewsSection";
 
 interface Plan {
   id: string;
@@ -206,6 +207,9 @@ export default function CreatorProfilePage() {
             </div>
           </section>
         )}
+
+        {/* Reviews */}
+        <ReviewsSection creatorId={creator.id} />
       </div>
     </div>
   );

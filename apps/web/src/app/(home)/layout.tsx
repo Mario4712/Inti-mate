@@ -12,8 +12,10 @@ import {
   LayoutDashboard,
   LogOut,
   MessageCircle,
+  Moon,
   Radio,
   Search,
+  Sun,
   Trophy,
   User,
   Wallet,
@@ -21,12 +23,14 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useTheme } from "@/contexts/theme-context";
 
 export default function HomeLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const { theme, toggleTheme } = useTheme();
   usePushNotifications();
 
   useEffect(() => {
@@ -83,6 +87,13 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
 
           {/* Right actions */}
           <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={toggleTheme}
+              className="rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-gray-200"
+              title={theme === "dark" ? "Modo claro" : "Modo escuro"}
+            >
+              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
             <NotificationBell />
             <Link href="/messages" className="rounded-lg p-2 text-gray-400 hover:bg-gray-800 hover:text-gray-200">
               <MessageCircle size={18} />

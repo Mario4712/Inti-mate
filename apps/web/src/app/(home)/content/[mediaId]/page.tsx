@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Eye, Heart, Lock, Loader2, Play, Share2 } from "lucide-react";
 import api from "@/lib/api";
+import { HlsPlayer } from "@/components/media/HlsPlayer";
 
 interface MediaDetail {
   id: string;
@@ -84,11 +85,16 @@ export default function ContentViewerPage() {
       <div className="relative overflow-hidden rounded-xl bg-gray-900">
         {hasAccess && contentUrl ? (
           media.type === "VIDEO" ? (
-            <video
+            <HlsPlayer
               src={contentUrl}
-              controls
-              className="w-full max-h-[60vh] bg-black"
               poster={media.thumbnailUrl ?? undefined}
+              className="w-full max-h-[60vh] bg-black"
+              onTimeUpdate={(t) => {
+                // Report watch progress every 10s
+                if (Math.round(t) % 10 === 0 && t > 0) {
+                  api.post(`/content/${media.id}/watch-progress`, { durationSec: Math.round(t) }).catch(() => {});
+                }
+              }}
             />
           ) : (
             <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>

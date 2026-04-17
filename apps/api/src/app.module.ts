@@ -37,6 +37,7 @@ import { AiAvatarModule } from "./ai-avatar/ai-avatar.module";
 import { ContentGenModule } from "./content-gen/content-gen.module";
 import { EditSuggestionsModule } from "./edit-suggestions/edit-suggestions.module";
 import { VrContentModule } from "./vr-content/vr-content.module";
+import { ReviewsModule } from "./reviews/reviews.module";
 import { DatabaseModule } from "./common/database/database.module";
 import { RedisModule } from "./common/redis/redis.module";
 import { SentryModule } from "./common/sentry/sentry.module";
@@ -114,6 +115,7 @@ import appConfig from "./config/app.config";
     ContentGenModule,
     EditSuggestionsModule,
     VrContentModule,
+    ReviewsModule,
   ],
   providers: [
     // Rate limiting per user ID (falls back to IP for anonymous)
