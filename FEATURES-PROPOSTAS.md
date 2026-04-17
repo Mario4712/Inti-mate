@@ -67,10 +67,10 @@
 - [ ] Gerenciamento de conteúdo (galeria, status de moderação)
 
 ### 10. Integração LiveKit para Lives
-- [ ] Instalar `@livekit/components-react` e `livekit-server-sdk`
-- [ ] Criar sala LiveKit ao iniciar live
-- [ ] Token JWT para host e viewers
-- [ ] UI de live com chat integrado
+- [x] Instalar `@livekit/components-react` e `livekit-server-sdk`
+- [x] Criar sala LiveKit ao iniciar live
+- [x] Token JWT para host e viewers
+- [x] UI de live com chat integrado
 - [ ] Configurações de LIVEKIT_* no .env
 
 ---
@@ -87,7 +87,7 @@
 - [x] Toggle de tema no header
 - [x] Persistir preferência em localStorage
 - [x] CSS variables para cores do tema
-- [ ] Respeitar `prefers-color-scheme` do sistema
+- [x] Respeitar `prefers-color-scheme` do sistema
 
 ### 13. Internacionalização (i18n)
 - [ ] Instalar `next-intl` ou `react-i18next`
@@ -97,7 +97,7 @@
 
 ### 14. Sistema de Busca Completo
 - [ ] Página /search com filtros (categoria, preço, localização)
-- [ ] Autocomplete com debounce
+- [x] Autocomplete com debounce
 - [ ] Integração Elasticsearch (já configurado no docker)
 - [ ] Indexação automática de criadores no ES
 
@@ -108,10 +108,10 @@
 - [x] Moderação de reviews ofensivas
 
 ### 16. Stories Interativos
-- [ ] Enquetes em stories (modelo `StoryPoll` com opções)
-- [ ] Perguntas abertas (Q&A stories)
+- [x] Enquetes em stories (modelo `StoryPoll` com opções)
+- [x] Perguntas abertas (Q&A stories com campo `question`)
 - [ ] Countdown/Timer para eventos
-- [ ] Swipe gestures no mobile
+- [x] Swipe gestures no mobile (tap zones + pause on hold)
 
 ---
 
@@ -130,7 +130,7 @@
 - [ ] Sugestões de melhores horários para postar
 
 ### 19. Sistema de Denúncias e Moderação Comunitária
-- [ ] Botão "Denunciar" em conteúdo, perfil e mensagens
+- [x] Botão "Denunciar" em conteúdo, perfil e mensagens
 - [ ] Fila de moderação com painel admin
 - [ ] Moderação por IA (classificação de texto/imagem)
 - [ ] Dashboard de moderação com métricas

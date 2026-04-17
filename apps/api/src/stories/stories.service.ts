@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   Logger,
@@ -210,6 +211,80 @@ export class StoriesService {
     if (expired.length > 0) {
       this.logger.log(`Stories expirados: ${expired.length}`);
     }
+  }
+
+  // ─── Enquetes (Polls) ─────────────────────────────────────
+
+  async createPoll(storyId: string, creatorId: string, options: string[]) {
+    const story = await this.prisma.story.findUnique({ where: { id: storyId } });
+    if (!story) throw new NotFoundException("Story não encontrado");
+    if (story.creatorId !== creatorId) throw new ForbiddenException();
+    if (options.length < 2 || options.length > 4) {
+      throw new BadRequestException("Enquete deve ter entre 2 e 4 opções.");
+    }
+    return this.prisma.storyPoll.create({
+      data: {
+        storyId,
+        options: {
+          create: options.map((text, order) => ({ text, order })),
+        },
+      },
+      include: { options: { orderBy: { order: "asc" } } },
+    });
+  }
+
+  async vote(storyId: string, optionId: string, voterId: string) {
+    const story = await this.prisma.story.findFirst({
+      where: { id: storyId, expiresAt: { gte: new Date() } },
+    });
+    if (!story) throw new NotFoundException("Story não encontrado ou expirado");
+
+    const hasAccess = story.creatorId === voterId || (await this.checkAccess(voterId, story.creatorId));
+    if (!hasAccess) throw new ForbiddenException("Acesso exclusivo para assinantes");
+
+    const option = await this.prisma.storyPollOption.findFirst({
+      where: { id: optionId, poll: { storyId } },
+    });
+    if (!option) throw new NotFoundException("Opção não encontrada");
+
+    await this.prisma.storyPollVote.upsert({
+      where: { optionId_voterId: { optionId, voterId } },
+      create: { optionId, voterId },
+      update: {},
+    });
+
+    return this.getPollResults(storyId, voterId);
+  }
+
+  async getPollResults(storyId: string, viewerId: string) {
+    const poll = await this.prisma.storyPoll.findUnique({
+      where: { storyId },
+      include: {
+        options: {
+          orderBy: { order: "asc" },
+          include: { votes: true },
+        },
+      },
+    });
+    if (!poll) return null;
+
+    const total = poll.options.reduce((acc, o) => acc + o.votes.length, 0);
+    const myVoteOptionId = poll.options.find((o) =>
+      o.votes.some((v) => v.voterId === viewerId)
+    )?.id ?? null;
+
+    return {
+      id: poll.id,
+      storyId,
+      total,
+      myVoteOptionId,
+      options: poll.options.map((o) => ({
+        id: o.id,
+        text: o.text,
+        votes: o.votes.length,
+        pct: total > 0 ? Math.round((o.votes.length / total) * 100) : 0,
+      })),
+    };
   }
 
   // ─── Helpers ─────────────────────────────────────────────

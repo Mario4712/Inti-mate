@@ -561,12 +561,14 @@ model Story {
   creatorId   String
   mediaUrl    String
   mediaType   MediaType
-  expiresAt   DateTime          // 24h após criação
+  expiresAt   DateTime
   viewCount   Int      @default(0)
   status      String   @default("PENDING_REVIEW")
+  question    String?  @db.VarChar(200)
   createdAt   DateTime @default(now())
 
   views       StoryView[]
+  poll        StoryPoll?
 
   @@index([creatorId])
   @@index([expiresAt])
@@ -580,6 +582,36 @@ model StoryView {
   viewedAt  DateTime @default(now())
 
   @@unique([storyId, viewerId])
+}
+
+model StoryPoll {
+  id        String          @id @default(cuid())
+  storyId   String          @unique
+  story     Story           @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  options   StoryPollOption[]
+  createdAt DateTime        @default(now())
+}
+
+model StoryPollOption {
+  id        String          @id @default(cuid())
+  pollId    String
+  poll      StoryPoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  text      String          @db.VarChar(80)
+  order     Int             @default(0)
+  votes     StoryPollVote[]
+
+  @@index([pollId])
+}
+
+model StoryPollVote {
+  id        String          @id @default(cuid())
+  optionId  String
+  option    StoryPollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  voterId   String
+  createdAt DateTime        @default(now())
+
+  @@unique([optionId, voterId])
+  @@index([voterId])
 }
 
 // ─────────────────────────────────────────────────────────────

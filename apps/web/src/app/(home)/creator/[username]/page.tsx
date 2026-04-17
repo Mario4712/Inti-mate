@@ -9,6 +9,7 @@ import api from "@/lib/api";
 import { TipButton } from "@/components/tips/TipButton";
 import { AiChatButton } from "@/components/ai-persona/AiChatButton";
 import { ReviewsSection } from "@/components/reviews/ReviewsSection";
+import { ReportButton } from "@/components/report/ReportButton";
 
 interface Plan {
   id: string;
@@ -161,6 +162,7 @@ export default function CreatorProfilePage() {
             Mensagem
           </button>
           <AiChatButton username={creator.username} />
+          <ReportButton targetType="USER" targetId={creator.id} />
         </div>
 
         {/* Subscription plans */}

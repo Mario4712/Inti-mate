@@ -5,6 +5,12 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { ArrowLeft, Loader2, Radio, Send, Zap } from "lucide-react";
 import { io, Socket } from "socket.io-client";
+import {
+  LiveKitRoom,
+  VideoConference,
+  RoomAudioRenderer,
+} from "@livekit/components-react";
+import "@livekit/components-styles";
 import api from "@/lib/api";
 
 interface LiveSession {
@@ -190,15 +196,16 @@ export default function LiveViewerPage() {
           <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-gray-900">
             {live.status === "LIVE" ? (
               token ? (
-                /* LiveKit video would mount here — placeholder until @livekit/components-react is added */
-                <div className="flex h-full flex-col items-center justify-center gap-3">
-                  <span className="flex items-center gap-2 rounded-full bg-red-600/20 px-3 py-1 text-sm font-semibold text-red-400">
-                    <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                    AO VIVO
-                  </span>
-                  <p className="text-gray-400 text-sm">Player de vídeo em tempo real</p>
-                  <p className="text-xs text-gray-600">Token LiveKit: obtido com sucesso</p>
-                </div>
+                <LiveKitRoom
+                  token={token.token}
+                  serverUrl={token.wsUrl}
+                  video={false}
+                  audio={false}
+                  className="h-full w-full"
+                >
+                  <VideoConference />
+                  <RoomAudioRenderer />
+                </LiveKitRoom>
               ) : (
                 <div className="flex h-full items-center justify-center">
                   <Loader2 className="h-8 w-8 animate-spin text-purple-500" />

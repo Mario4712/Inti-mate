@@ -7,6 +7,7 @@ import Link from "next/link";
 import { ArrowLeft, Eye, Heart, Lock, Loader2, Play, Share2 } from "lucide-react";
 import api from "@/lib/api";
 import { HlsPlayer } from "@/components/media/HlsPlayer";
+import { ReportButton } from "@/components/report/ReportButton";
 
 interface MediaDetail {
   id: string;
@@ -172,6 +173,7 @@ export default function ContentViewerPage() {
             <button className="flex items-center gap-1 hover:text-purple-400 transition-colors">
               <Share2 size={14} />
             </button>
+            <ReportButton targetType="MEDIA" targetId={media.id} />
           </div>
         </div>
 

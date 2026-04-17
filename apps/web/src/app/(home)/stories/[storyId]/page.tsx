@@ -14,7 +14,11 @@ interface StoryItem {
   expiresAt: string;
   viewed: boolean;
   viewCount: number;
+  question: string | null;
 }
+
+interface PollOption { id: string; text: string; votes: number; pct: number; }
+interface Poll { id: string; total: number; myVoteOptionId: string | null; options: PollOption[]; }
 
 const STORY_DURATION_MS = 5000;
 
@@ -28,9 +32,13 @@ export default function StoryViewerPage() {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [progress, setProgress] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [poll, setPoll] = useState<Poll | null>(null);
+  const [pollLoading, setPollLoading] = useState(false);
+  const [paused, setPaused] = useState(false);
 
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
+  const elapsedRef = useRef<number>(0);
 
   const clearTimer = useCallback(() => {
     if (progressRef.current) {
@@ -47,12 +55,12 @@ export default function StoryViewerPage() {
     });
   }, [stories.length, router]);
 
-  const startTimer = useCallback(() => {
+  const startTimer = useCallback((fromElapsed = 0) => {
     clearTimer();
-    setProgress(0);
-    startTimeRef.current = Date.now();
+    startTimeRef.current = Date.now() - fromElapsed;
     progressRef.current = setInterval(() => {
       const elapsed = Date.now() - startTimeRef.current;
+      elapsedRef.current = elapsed;
       const pct = Math.min((elapsed / STORY_DURATION_MS) * 100, 100);
       setProgress(pct);
       if (pct >= 100) {
@@ -61,6 +69,14 @@ export default function StoryViewerPage() {
       }
     }, 50);
   }, [clearTimer, advance]);
+
+  useEffect(() => {
+    if (paused) {
+      clearTimer();
+    } else {
+      startTimer(elapsedRef.current);
+    }
+  }, [paused, clearTimer, startTimer]);
 
   // Load stories for this creator
   useEffect(() => {
@@ -76,17 +92,35 @@ export default function StoryViewerPage() {
       .finally(() => setLoading(false));
   }, [creatorId, storyId, router]);
 
-  // Record view + start timer when story changes
+  // Record view + start timer + load poll when story changes
   useEffect(() => {
     if (stories.length === 0) return;
     const story = stories[currentIdx];
     if (!story) return;
 
+    setPoll(null);
+    elapsedRef.current = 0;
     api.post(`/stories/${story.id}/view`).catch(() => {});
-    startTimer();
+    startTimer(0);
+
+    // Load poll if story has a question
+    if (story.question) {
+      setPollLoading(true);
+      api.get(`/stories/${story.id}/poll`)
+        .then((r) => setPoll(r.data))
+        .catch(() => {})
+        .finally(() => setPollLoading(false));
+    }
 
     return () => clearTimer();
   }, [currentIdx, stories, startTimer, clearTimer]);
+
+  async function handleVote(optionId: string) {
+    if (!poll || poll.myVoteOptionId) return;
+    const story = stories[currentIdx];
+    const res = await api.post(`/stories/${story.id}/poll/vote`, { optionId }).catch(() => null);
+    if (res?.data) setPoll(res.data);
+  }
 
   if (loading || stories.length === 0) return null;
 
@@ -116,7 +150,13 @@ export default function StoryViewerPage() {
       </button>
 
       {/* Media */}
-      <div className="relative w-full max-w-sm h-full max-h-[90vh] rounded-xl overflow-hidden">
+      <div
+        className="relative w-full max-w-sm h-full max-h-[90vh] rounded-xl overflow-hidden"
+        onMouseDown={() => setPaused(true)}
+        onMouseUp={() => setPaused(false)}
+        onTouchStart={() => setPaused(true)}
+        onTouchEnd={() => setPaused(false)}
+      >
         {story.mediaType.startsWith("image") ? (
           <Image
             src={story.mediaUrl}
@@ -148,6 +188,45 @@ export default function StoryViewerPage() {
           onClick={advance}
           aria-label="Próximo story"
         />
+
+        {/* Poll overlay */}
+        {story.question && (
+          <div className="absolute bottom-16 left-4 right-4 z-20 rounded-2xl bg-black/70 p-4 backdrop-blur-sm">
+            <p className="mb-3 text-center text-sm font-semibold text-white">{story.question}</p>
+            {pollLoading ? (
+              <p className="text-center text-xs text-gray-400">Carregando enquete...</p>
+            ) : poll ? (
+              <div className="space-y-2">
+                {poll.options.map((opt) => {
+                  const voted = poll.myVoteOptionId === opt.id;
+                  const revealed = !!poll.myVoteOptionId;
+                  return (
+                    <button
+                      key={opt.id}
+                      disabled={revealed}
+                      onClick={() => handleVote(opt.id)}
+                      className="relative w-full overflow-hidden rounded-xl border border-white/20 px-4 py-2 text-left text-sm font-medium text-white transition-colors hover:border-white/40 disabled:cursor-default"
+                    >
+                      {revealed && (
+                        <div
+                          className={`absolute inset-y-0 left-0 rounded-xl transition-all ${voted ? "bg-purple-500/50" : "bg-white/10"}`}
+                          style={{ width: `${opt.pct}%` }}
+                        />
+                      )}
+                      <span className="relative">{opt.text}</span>
+                      {revealed && (
+                        <span className="relative ml-2 text-xs text-gray-300">{opt.pct}%</span>
+                      )}
+                    </button>
+                  );
+                })}
+                {poll.myVoteOptionId && (
+                  <p className="text-center text-xs text-gray-400">{poll.total} {poll.total === 1 ? "voto" : "votos"}</p>
+                )}
+              </div>
+            ) : null}
+          </div>
+        )}
 
         {/* Navigation arrows (desktop) */}
         {currentIdx > 0 && (

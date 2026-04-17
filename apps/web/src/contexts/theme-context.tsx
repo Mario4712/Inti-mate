@@ -17,10 +17,22 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem("theme") as Theme | null;
-    if (stored === "light" || stored === "dark") {
-      setThemeState(stored);
-      document.documentElement.classList.toggle("light", stored === "light");
-    }
+    const preferred = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    const initial = (stored === "light" || stored === "dark") ? stored : preferred;
+    setThemeState(initial);
+    document.documentElement.classList.toggle("light", initial === "light");
+
+    // Follow OS preference changes only when user hasn't manually chosen
+    const mq = window.matchMedia("(prefers-color-scheme: light)");
+    const handler = (e: MediaQueryListEvent) => {
+      if (!localStorage.getItem("theme")) {
+        const t: Theme = e.matches ? "light" : "dark";
+        setThemeState(t);
+        document.documentElement.classList.toggle("light", t === "light");
+      }
+    };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
   }, []);
 
   const setTheme = useCallback((t: Theme) => {
