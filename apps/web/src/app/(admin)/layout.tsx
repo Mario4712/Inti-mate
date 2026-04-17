@@ -8,6 +8,7 @@ import {
   FileText,
   LogOut,
   Shield,
+  ShieldCheck,
   Users,
   Wallet,
   AlertTriangle,
@@ -16,12 +17,13 @@ import {
 import { useEffect } from "react";
 
 const NAV = [
-  { href: "/admin",            label: "Dashboard",   icon: BarChart3,    exact: true },
-  { href: "/admin/users",      label: "Usuários",    icon: Users },
-  { href: "/admin/kyc",        label: "KYC",         icon: CheckSquare },
-  { href: "/admin/withdrawals",label: "Saques",      icon: Wallet },
-  { href: "/admin/content",    label: "Conteúdo",    icon: FileText },
-  { href: "/admin/reports",    label: "Denúncias",   icon: AlertTriangle },
+  { href: "/admin",               label: "Dashboard",         icon: BarChart3,   exact: true },
+  { href: "/admin/users",         label: "Usuários",          icon: Users },
+  { href: "/admin/kyc",           label: "KYC",               icon: CheckSquare },
+  { href: "/admin/withdrawals",   label: "Saques",            icon: Wallet },
+  { href: "/admin/content",       label: "Conteúdo",          icon: FileText },
+  { href: "/admin/reports",       label: "Denúncias",         icon: AlertTriangle },
+  { href: "/admin/verified-tier", label: "Acesso Verificado", icon: ShieldCheck },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

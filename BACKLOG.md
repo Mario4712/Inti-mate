@@ -147,8 +147,8 @@ O núcleo da plataforma está funcional: autenticação, assinaturas, conteúdo,
 |---|---------|---------|----------|------------|
 | 1 | Featured Creators | ✅ | ✅ | Baixa |
 | 2 | Story Browsing | ✅ | ✅ | Baixa |
-| 3 | Edit Suggestions | ✅ | ❌ | Baixa-Média |
-| 4 | Verified Tier UI | ✅ parcial | ❌ | Baixa-Média |
+| 3 | Edit Suggestions | ✅ | ✅ | Baixa-Média |
+| 4 | Verified Tier UI | ✅ | ✅ | Baixa-Média |
 | 5 | Tournaments | ✅ | ❌ | Média |
 | 6 | Social Scheduler | ✅ | ❌ | Média |
 | 7 | Content Generation UI | ✅ | ❌ | Média |

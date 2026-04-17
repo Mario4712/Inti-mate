@@ -4,6 +4,7 @@ import {
 } from "@nestjs/common";
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from "@nestjs/swagger";
 import { AdminService } from "./admin.service";
+import { VerifiedTierService } from "../verified-tier/verified-tier.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
@@ -51,7 +52,10 @@ class ChangeRoleDto {
 @Roles(Role.ADMIN)
 @Controller({ path: "admin", version: "1" })
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly verifiedTierService: VerifiedTierService,
+  ) {}
 
   // ─── Dashboard ───────────────────────────────────────────
 
@@ -248,5 +252,32 @@ export class AdminController {
     @CurrentUser("id") adminId: string,
   ) {
     return this.adminService.moderateContent(mediaId, "REJECTED", adminId, dto.reason);
+  }
+
+  // ─── Verified Tier ───────────────────────────────────────
+
+  @Get("verified-tier")
+  @ApiOperation({ summary: "Listar usuários com Acesso Verificado ativo" })
+  @ApiQuery({ name: "page",  required: false, type: Number })
+  @ApiQuery({ name: "limit", required: false, type: Number })
+  listVerifiedTier(
+    @Query("page",  new DefaultValuePipe(1),  ParseIntPipe) page:  number,
+    @Query("limit", new DefaultValuePipe(50), ParseIntPipe) limit: number,
+  ) {
+    return this.verifiedTierService.listVerifiedUsers(page, limit);
+  }
+
+  @Patch("verified-tier/:userId/approve")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Conceder Acesso Verificado a um usuário (admin)" })
+  approveVerifiedTier(@Param("userId") userId: string) {
+    return this.verifiedTierService.requestAccess(userId);
+  }
+
+  @Patch("verified-tier/:userId/revoke")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Revogar Acesso Verificado de um usuário (admin)" })
+  revokeVerifiedTier(@Param("userId") userId: string) {
+    return this.verifiedTierService.revokeAccess(userId, "Revogado por administrador");
   }
 }

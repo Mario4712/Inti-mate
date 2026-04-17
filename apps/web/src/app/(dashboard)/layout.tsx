@@ -9,10 +9,12 @@ import {
   ExternalLink,
   Home,
   LayoutDashboard,
+  Lightbulb,
   LogOut,
   MessageCircle,
   PackageOpen,
   Settings,
+  ShieldCheck,
   Upload,
   Users,
   Video,
@@ -27,6 +29,8 @@ const NAV_ITEMS = [
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/dashboard/lives", label: "Lives", icon: Video },
   { href: "/messages", label: "Mensagens", icon: MessageCircle },
+  { href: "/dashboard/edit-suggestions", label: "Sugestões", icon: Lightbulb },
+  { href: "/dashboard/verified-tier", label: "Acesso Verificado", icon: ShieldCheck },
   { href: "/dashboard/settings", label: "Configurações", icon: Settings },
 ];
 
